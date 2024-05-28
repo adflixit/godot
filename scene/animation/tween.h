@@ -32,6 +32,7 @@
 #define TWEEN_H
 
 #include "core/object/ref_counted.h"
+#include "core/math/cubic_bezier.h"
 
 class Tween;
 class Node;
@@ -75,35 +76,9 @@ public:
 		TWEEN_PAUSE_PROCESS,
 	};
 
-	enum TransitionType {
-		TRANS_LINEAR,
-		TRANS_SINE,
-		TRANS_QUINT,
-		TRANS_QUART,
-		TRANS_QUAD,
-		TRANS_EXPO,
-		TRANS_ELASTIC,
-		TRANS_CUBIC,
-		TRANS_CIRC,
-		TRANS_BOUNCE,
-		TRANS_BACK,
-		TRANS_SPRING,
-		TRANS_MAX
-	};
-
-	enum EaseType {
-		EASE_IN,
-		EASE_OUT,
-		EASE_IN_OUT,
-		EASE_OUT_IN,
-		EASE_MAX
-	};
-
 private:
 	TweenProcessMode process_mode = TweenProcessMode::TWEEN_PROCESS_IDLE;
 	TweenPauseMode pause_mode = TweenPauseMode::TWEEN_PAUSE_BOUND;
-	TransitionType default_transition = TransitionType::TRANS_LINEAR;
-	EaseType default_ease = EaseType::EASE_IN_OUT;
 	ObjectID bound_node;
 
 	Vector<List<Ref<Tweener>>> tweeners;
@@ -118,14 +93,13 @@ private:
 	bool running = true;
 	bool dead = false;
 	bool valid = false;
-	bool default_parallel = false;
-	bool parallel_enabled = false;
+	bool sequential = true;
+	bool last_parallel = false;
 #ifdef DEBUG_ENABLED
 	bool is_infinite = false;
 #endif
 
-	typedef real_t (*interpolater)(real_t t, real_t b, real_t c, real_t d);
-	static interpolater interpolaters[TRANS_MAX][EASE_MAX];
+	static CubicBezier default_bezier;
 
 	void _start_tweeners();
 	void _stop_internal(bool p_reset);
@@ -163,16 +137,12 @@ public:
 	Ref<Tween> set_loops(int p_loops);
 	int get_loops_left() const;
 	Ref<Tween> set_speed_scale(float p_speed);
-	Ref<Tween> set_trans(TransitionType p_trans);
-	TransitionType get_trans();
-	Ref<Tween> set_ease(EaseType p_ease);
-	EaseType get_ease();
 
+	Ref<Tween> sequence();
 	Ref<Tween> parallel();
-	Ref<Tween> chain();
 
-	static real_t run_equation(TransitionType p_trans_type, EaseType p_ease_type, real_t t, real_t b, real_t c, real_t d);
-	static Variant interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, Tween::TransitionType p_trans, Tween::EaseType p_ease);
+	static real_t run_equation(Ref<CubicBezier> p_ease, real_t t, real_t b, real_t c, real_t d);
+	static Variant interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, Ref<CubicBezier> p_ease);
 
 	bool step(double p_delta);
 	bool can_process(bool p_tree_paused) const;
@@ -185,8 +155,6 @@ public:
 
 VARIANT_ENUM_CAST(Tween::TweenPauseMode);
 VARIANT_ENUM_CAST(Tween::TweenProcessMode);
-VARIANT_ENUM_CAST(Tween::TransitionType);
-VARIANT_ENUM_CAST(Tween::EaseType);
 
 class PropertyTweener : public Tweener {
 	GDCLASS(PropertyTweener, Tweener);
@@ -195,8 +163,7 @@ public:
 	Ref<PropertyTweener> from(const Variant &p_value);
 	Ref<PropertyTweener> from_current();
 	Ref<PropertyTweener> as_relative();
-	Ref<PropertyTweener> set_trans(Tween::TransitionType p_trans);
-	Ref<PropertyTweener> set_ease(Tween::EaseType p_ease);
+	Ref<PropertyTweener> set_ease(const Ref<CubicBezier> &p_ease);
 	Ref<PropertyTweener> set_delay(double p_delay);
 
 	void set_tween(const Ref<Tween> &p_tween) override;
@@ -220,8 +187,7 @@ private:
 	Ref<RefCounted> ref_copy; // Makes sure that RefCounted objects are not freed too early.
 
 	double duration = 0;
-	Tween::TransitionType trans_type = Tween::TRANS_MAX; // This is set inside set_tween();
-	Tween::EaseType ease_type = Tween::EASE_MAX;
+	Ref<CubicBezier> ease;
 
 	double delay = 0;
 	bool do_continue = true;
@@ -269,8 +235,7 @@ class MethodTweener : public Tweener {
 	GDCLASS(MethodTweener, Tweener);
 
 public:
-	Ref<MethodTweener> set_trans(Tween::TransitionType p_trans);
-	Ref<MethodTweener> set_ease(Tween::EaseType p_ease);
+	Ref<MethodTweener> set_ease(const Ref<CubicBezier> &p_ease);
 	Ref<MethodTweener> set_delay(double p_delay);
 
 	void set_tween(const Ref<Tween> &p_tween) override;
@@ -286,8 +251,7 @@ protected:
 private:
 	double duration = 0;
 	double delay = 0;
-	Tween::TransitionType trans_type = Tween::TRANS_MAX;
-	Tween::EaseType ease_type = Tween::EASE_MAX;
+	Ref<CubicBezier> ease;
 
 	Ref<Tween> tween;
 	Variant initial_val;

@@ -44,7 +44,6 @@
 #include "editor/inspector_dock.h"
 #include "editor/plugins/animation_player_editor_plugin.h"
 #include "scene/animation/animation_player.h"
-#include "scene/animation/tween.h"
 #include "scene/gui/check_box.h"
 #include "scene/gui/grid_container.h"
 #include "scene/gui/option_button.h"
@@ -5888,102 +5887,6 @@ void AnimationTrackEditor::_edit_menu_pressed(int p_option) {
 			undo_redo->commit_action();
 		} break;
 
-		case EDIT_EASE_SELECTION: {
-			ease_dialog->popup_centered(Size2(200, 100) * EDSCALE);
-		} break;
-		case EDIT_EASE_CONFIRM: {
-			EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
-			undo_redo->create_action(TTR("Make Easing Keys"));
-
-			Tween::TransitionType transition_type = static_cast<Tween::TransitionType>(transition_selection->get_selected_id());
-			Tween::EaseType ease_type = static_cast<Tween::EaseType>(ease_selection->get_selected_id());
-			float fps = ease_fps->get_value();
-			double dur_step = 1.0 / fps;
-
-			// Organize track and key.
-			HashMap<int, Vector<int>> keymap;
-			Vector<int> tracks;
-			for (const KeyValue<SelectedKey, KeyInfo> &E : selection) {
-				if (!tracks.has(E.key.track)) {
-					tracks.append(E.key.track);
-				}
-			}
-			for (int i = 0; i < tracks.size(); i++) {
-				switch (animation->track_get_type(tracks[i])) {
-					case Animation::TYPE_VALUE:
-					case Animation::TYPE_POSITION_3D:
-					case Animation::TYPE_ROTATION_3D:
-					case Animation::TYPE_SCALE_3D:
-					case Animation::TYPE_BLEND_SHAPE: {
-						Vector<int> keys;
-						for (const KeyValue<SelectedKey, KeyInfo> &E : selection) {
-							if (E.key.track == tracks[i]) {
-								keys.append(E.key.key);
-							}
-						}
-						keys.sort();
-						keymap.insert(tracks[i], keys);
-					} break;
-					default: {
-					} break;
-				}
-			}
-
-			// Make easing.
-			HashMap<int, Vector<int>>::Iterator E = keymap.begin();
-			while (E) {
-				int track = E->key;
-				Vector<int> keys = E->value;
-				int len = keys.size() - 1;
-
-				// Special case for angle interpolation.
-				bool is_using_angle = animation->track_get_interpolation_type(track) == Animation::INTERPOLATION_LINEAR_ANGLE || animation->track_get_interpolation_type(track) == Animation::INTERPOLATION_CUBIC_ANGLE;
-
-				// Make insert queue.
-				Vector<Pair<real_t, Variant>> insert_queue_new;
-				for (int i = 0; i < len; i++) {
-					// Check neighboring keys.
-					if (keys[i] + 1 == keys[i + 1]) {
-						double from_t = animation->track_get_key_time(track, keys[i]);
-						double to_t = animation->track_get_key_time(track, keys[i + 1]);
-						Variant from_v = animation->track_get_key_value(track, keys[i]);
-						Variant to_v = animation->track_get_key_value(track, keys[i + 1]);
-						if (is_using_angle) {
-							real_t a = from_v;
-							real_t b = to_v;
-							real_t to_diff = fmod(b - a, Math_TAU);
-							to_v = a + fmod(2.0 * to_diff, Math_TAU) - to_diff;
-						}
-						Variant delta_v = Animation::subtract_variant(to_v, from_v);
-						double duration = to_t - from_t;
-						double fixed_duration = duration - UNIT_EPSILON; // Prevent to overwrap keys...
-						for (double delta_t = dur_step; delta_t < fixed_duration; delta_t += dur_step) {
-							Pair<real_t, Variant> keydata;
-							keydata.first = from_t + delta_t;
-							keydata.second = Tween::interpolate_variant(from_v, delta_v, delta_t, duration, transition_type, ease_type);
-							insert_queue_new.append(keydata);
-						}
-					}
-				}
-
-				// Do insertion.
-				for (int i = 0; i < insert_queue_new.size(); i++) {
-					undo_redo->add_do_method(animation.ptr(), "track_insert_key", track, insert_queue_new[i].first, insert_queue_new[i].second);
-					undo_redo->add_undo_method(animation.ptr(), "track_remove_key_at_time", track, insert_queue_new[i].first);
-				}
-
-				++E;
-			}
-
-			undo_redo->add_do_method(this, "_clear_selection_for_anim", animation);
-			undo_redo->add_undo_method(this, "_clear_selection_for_anim", animation);
-			undo_redo->add_do_method(this, "_redraw_tracks");
-			undo_redo->add_undo_method(this, "_redraw_tracks");
-			undo_redo->commit_action();
-			_update_key_edit();
-
-		} break;
-
 		case EDIT_DUPLICATE_SELECTION: {
 			if (bezier_edit->is_visible()) {
 				bezier_edit->duplicate_selection();
@@ -6635,8 +6538,6 @@ AnimationTrackEditor::AnimationTrackEditor() {
 	edit->get_popup()->add_item(TTR("Scale Selection..."), EDIT_SCALE_SELECTION);
 	edit->get_popup()->add_item(TTR("Scale From Cursor..."), EDIT_SCALE_FROM_CURSOR);
 	edit->get_popup()->add_separator();
-	edit->get_popup()->add_item(TTR("Make Easing Selection..."), EDIT_EASE_SELECTION);
-	edit->get_popup()->add_separator();
 	edit->get_popup()->add_shortcut(ED_SHORTCUT("animation_editor/duplicate_selection", TTR("Duplicate Selection"), KeyModifierMask::CMD_OR_CTRL | Key::D), EDIT_DUPLICATE_SELECTION);
 	edit->get_popup()->add_shortcut(ED_SHORTCUT("animation_editor/duplicate_selection_transposed", TTR("Duplicate Transposed"), KeyModifierMask::SHIFT | KeyModifierMask::CMD_OR_CTRL | Key::D), EDIT_DUPLICATE_TRANSPOSED);
 	edit->get_popup()->add_shortcut(ED_SHORTCUT("animation_editor/add_reset_value", TTR("Add RESET Value(s)")));
@@ -6771,48 +6672,6 @@ AnimationTrackEditor::AnimationTrackEditor() {
 	vbc->add_margin_child(TTR("Scale Ratio:"), scale);
 	scale_dialog->connect("confirmed", callable_mp(this, &AnimationTrackEditor::_edit_menu_pressed).bind(EDIT_SCALE_CONFIRM));
 	add_child(scale_dialog);
-
-	//
-	ease_dialog = memnew(ConfirmationDialog);
-	ease_dialog->set_title(TTR("Select Transition and Easing"));
-	ease_dialog->connect("confirmed", callable_mp(this, &AnimationTrackEditor::_edit_menu_pressed).bind(EDIT_EASE_CONFIRM));
-	add_child(ease_dialog);
-	GridContainer *ease_grid = memnew(GridContainer);
-	ease_grid->set_columns(2);
-	ease_dialog->add_child(ease_grid);
-	transition_selection = memnew(OptionButton);
-	transition_selection->add_item(TTR("Linear", "Transition Type"), Tween::TRANS_LINEAR);
-	transition_selection->add_item(TTR("Sine", "Transition Type"), Tween::TRANS_SINE);
-	transition_selection->add_item(TTR("Quint", "Transition Type"), Tween::TRANS_QUINT);
-	transition_selection->add_item(TTR("Quart", "Transition Type"), Tween::TRANS_QUART);
-	transition_selection->add_item(TTR("Quad", "Transition Type"), Tween::TRANS_QUAD);
-	transition_selection->add_item(TTR("Expo", "Transition Type"), Tween::TRANS_EXPO);
-	transition_selection->add_item(TTR("Elastic", "Transition Type"), Tween::TRANS_ELASTIC);
-	transition_selection->add_item(TTR("Cubic", "Transition Type"), Tween::TRANS_CUBIC);
-	transition_selection->add_item(TTR("Circ", "Transition Type"), Tween::TRANS_CIRC);
-	transition_selection->add_item(TTR("Bounce", "Transition Type"), Tween::TRANS_BOUNCE);
-	transition_selection->add_item(TTR("Back", "Transition Type"), Tween::TRANS_BACK);
-	transition_selection->add_item(TTR("Spring", "Transition Type"), Tween::TRANS_SPRING);
-	transition_selection->select(Tween::TRANS_LINEAR); // Default
-	transition_selection->set_auto_translate(false); // Translation context is needed.
-	ease_selection = memnew(OptionButton);
-	ease_selection->add_item(TTR("In", "Ease Type"), Tween::EASE_IN);
-	ease_selection->add_item(TTR("Out", "Ease Type"), Tween::EASE_OUT);
-	ease_selection->add_item(TTR("InOut", "Ease Type"), Tween::EASE_IN_OUT);
-	ease_selection->add_item(TTR("OutIn", "Ease Type"), Tween::EASE_OUT_IN);
-	ease_selection->select(Tween::EASE_IN_OUT); // Default
-	ease_selection->set_auto_translate(false); // Translation context is needed.
-	ease_fps = memnew(SpinBox);
-	ease_fps->set_min(1);
-	ease_fps->set_max(999);
-	ease_fps->set_step(1);
-	ease_fps->set_value(30); // Default
-	ease_grid->add_child(memnew(Label(TTR("Transition Type:"))));
-	ease_grid->add_child(transition_selection);
-	ease_grid->add_child(memnew(Label(TTR("Ease Type:"))));
-	ease_grid->add_child(ease_selection);
-	ease_grid->add_child(memnew(Label(TTR("FPS:"))));
-	ease_grid->add_child(ease_fps);
 
 	//
 	bake_dialog = memnew(ConfirmationDialog);

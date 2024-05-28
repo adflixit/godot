@@ -686,4 +686,66 @@ public:
 
 VARIANT_ENUM_CAST(RibbonTrailMesh::Shape)
 
+/**
+	2D circle mesh
+*/
+
+class CircleMesh2D : public PrimitiveMesh {
+	GDCLASS(CircleMesh2D, PrimitiveMesh);
+
+private:
+	float radius = 0.5;
+	int radial_segments = 64;
+
+protected:
+	static void _bind_methods();
+	virtual void _create_mesh_array(Array &p_arr) const override;
+
+	virtual void _update_lightmap_size() override;
+
+public:
+	void set_radius(const float p_radius);
+	float get_radius() const;
+
+	void set_radial_segments(const int p_segments);
+	int get_radial_segments() const;
+
+	CircleMesh2D();
+};
+
+/**
+	2D rounded corner rectangle
+*/
+
+class RoundedBox2D : public PrimitiveMesh {
+	GDCLASS(RoundedBox2D, PrimitiveMesh);
+
+private:
+	Size2 size = Size2(2.0, 2.0);
+	float corner_radius = 0.25;
+	int corner_detail = 8;
+	bool merge_overlapping = false;
+
+protected:
+	static void _bind_methods();
+	virtual void _create_mesh_array(Array &p_arr) const override;
+
+	virtual void _update_lightmap_size() override;
+
+public:
+	void set_size(const Size2 &p_size);
+	Size2 get_size() const;
+
+	void set_corner_radius(const float p_radius);
+	float get_corner_radius() const;
+
+	void set_corner_detail(const int p_detail);
+	int get_corner_detail() const;
+
+	void set_merge_overlapping(const bool p_merge);
+	bool get_merge_overlapping() const;
+
+	RoundedBox2D();
+};
+
 #endif // PRIMITIVE_MESHES_H
