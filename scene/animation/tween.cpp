@@ -233,24 +233,6 @@ Ref<Tween> Tween::set_speed_scale(float p_speed) {
 	return this;
 }
 
-Ref<Tween> Tween::set_trans(TransitionType p_trans) {
-	default_transition = p_trans;
-	return this;
-}
-
-Tween::TransitionType Tween::get_trans() {
-	return default_transition;
-}
-
-Ref<Tween> Tween::set_ease(EaseType p_ease) {
-	default_ease = p_ease;
-	return this;
-}
-
-Tween::EaseType Tween::get_ease() {
-	return default_ease;
-}
-
 Ref<Tween> Tween::sequence() {
 	sequential = true;
 	last_parallel = false;
@@ -437,7 +419,6 @@ void Tween::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("loop", "loops"), &Tween::set_loops, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_loops_left"), &Tween::get_loops_left);
 	ClassDB::bind_method(D_METHOD("speed_scale", "speed"), &Tween::set_speed_scale);
-	ClassDB::bind_method(D_METHOD("ease", "ease"), &Tween::set_ease);
 
 	ClassDB::bind_method(D_METHOD("sequence"), &Tween::sequence);
 	ClassDB::bind_method(D_METHOD("parallel"), &Tween::parallel);

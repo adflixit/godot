@@ -3736,7 +3736,7 @@ void CircleMesh2D::_bind_methods() {
 void CircleMesh2D::set_radius(const float p_radius) {
 	radius = p_radius;
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 float CircleMesh2D::get_radius() const {
@@ -3745,7 +3745,7 @@ float CircleMesh2D::get_radius() const {
 
 void CircleMesh2D::set_radial_segments(const int p_segments) {
 	radial_segments = p_segments > 4 ? p_segments : 4;
-	request_update();
+	_request_update();
 }
 
 int CircleMesh2D::get_radial_segments() const {
@@ -3854,7 +3854,6 @@ void RoundedBox2D::_create_mesh_array(Array &p_arr) const {
 
 		// Connect next corner.
 		if (fill_extent) {
-			int pivot_index = (corner_detail + 2) * i;
 			int next_pivot_index = (corner_detail + 2) * ((i + 1) % 4);
 
 			indices.push_back(pivot_index); // current corner
@@ -3909,7 +3908,7 @@ void RoundedBox2D::_bind_methods() {
 void RoundedBox2D::set_size(const Size2 &p_size) {
 	size = p_size;
 	_update_lightmap_size();
-	request_update();
+	_request_update();
 }
 
 Size2 RoundedBox2D::get_size() const {
@@ -3918,7 +3917,7 @@ Size2 RoundedBox2D::get_size() const {
 
 void RoundedBox2D::set_corner_radius(const float p_radius) {
 	corner_radius = CLAMP(p_radius, 0.0, MIN(size.x, size.y) / 2.0);
-	request_update();
+	_request_update();
 }
 
 float RoundedBox2D::get_corner_radius() const {
@@ -3927,7 +3926,7 @@ float RoundedBox2D::get_corner_radius() const {
 
 void RoundedBox2D::set_corner_detail(const int p_detail) {
 	corner_detail = CLAMP(p_detail, 1, 32);
-	request_update();
+	_request_update();
 }
 
 int RoundedBox2D::get_corner_detail() const {
@@ -3936,7 +3935,7 @@ int RoundedBox2D::get_corner_detail() const {
 
 void RoundedBox2D::set_merge_overlapping(const bool p_merge) {
 	merge_overlapping = p_merge;
-	request_update();
+	_request_update();
 }
 
 bool RoundedBox2D::get_merge_overlapping() const {
