@@ -31,8 +31,7 @@
 #ifndef TWEEN_H
 #define TWEEN_H
 
-#include "core/object/ref_counted.h"
-#include "core/math/cubic_bezier.h"
+#include "scene/animation/interpolator.h"
 
 class Tween;
 class Node;
@@ -79,6 +78,7 @@ public:
 private:
 	TweenProcessMode process_mode = TweenProcessMode::TWEEN_PROCESS_IDLE;
 	TweenPauseMode pause_mode = TweenPauseMode::TWEEN_PAUSE_BOUND;
+	Ref<Interpolator> interpolator;
 	ObjectID bound_node;
 
 	Vector<List<Ref<Tweener>>> tweeners;
@@ -99,7 +99,7 @@ private:
 	bool is_infinite = false;
 #endif
 
-	static CubicBezier default_bezier;
+	static Ref<Interpolator> default_interpolator;
 
 	void _start_tweeners();
 	void _stop_internal(bool p_reset);
@@ -109,6 +109,12 @@ protected:
 	static void _bind_methods();
 
 public:
+	static void init_static();
+	static void free_static();
+
+	static void set_default_interpolator(Ref<Interpolator> p_interpolator);
+	static Ref<Interpolator> get_default_interpolator();
+
 	virtual String to_string() override;
 
 	Ref<PropertyTweener> tween_property(const Object *p_target, const NodePath &p_property, Variant p_to, double p_duration);
@@ -137,12 +143,14 @@ public:
 	Ref<Tween> set_loops(int p_loops);
 	int get_loops_left() const;
 	Ref<Tween> set_speed_scale(float p_speed);
+	Ref<Tween> set_interpolator(Ref<Interpolator> p_interpolator);
+	Ref<Interpolator> get_interpolator();
 
 	Ref<Tween> sequence();
 	Ref<Tween> parallel();
 
-	static real_t run_equation(Ref<CubicBezier> p_ease, real_t t, real_t b, real_t c, real_t d);
-	static Variant interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, Ref<CubicBezier> p_ease);
+	static real_t run_interpolator(const Ref<Interpolator> &p_interpolator, real_t t, real_t b, real_t c, real_t d);
+	static Variant interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, const Ref<Interpolator> &p_interpolator);
 
 	bool step(double p_delta);
 	bool can_process(bool p_tree_paused) const;
@@ -163,7 +171,7 @@ public:
 	Ref<PropertyTweener> from(const Variant &p_value);
 	Ref<PropertyTweener> from_current();
 	Ref<PropertyTweener> as_relative();
-	Ref<PropertyTweener> set_ease(const Ref<CubicBezier> &p_ease);
+	Ref<PropertyTweener> set_interpolator(Ref<Interpolator> p_interpolator);
 	Ref<PropertyTweener> set_delay(double p_delay);
 
 	void set_tween(const Ref<Tween> &p_tween) override;
@@ -187,7 +195,7 @@ private:
 	Ref<RefCounted> ref_copy; // Makes sure that RefCounted objects are not freed too early.
 
 	double duration = 0;
-	Ref<CubicBezier> ease;
+	Ref<Interpolator> interpolator;
 
 	double delay = 0;
 	bool do_continue = true;
@@ -235,7 +243,7 @@ class MethodTweener : public Tweener {
 	GDCLASS(MethodTweener, Tweener);
 
 public:
-	Ref<MethodTweener> set_ease(const Ref<CubicBezier> &p_ease);
+	Ref<MethodTweener> set_interpolator(Ref<Interpolator> p_interpolator);
 	Ref<MethodTweener> set_delay(double p_delay);
 
 	void set_tween(const Ref<Tween> &p_tween) override;
@@ -251,7 +259,7 @@ protected:
 private:
 	double duration = 0;
 	double delay = 0;
-	Ref<CubicBezier> ease;
+	Ref<Interpolator> interpolator;
 
 	Ref<Tween> tween;
 	Variant initial_val;

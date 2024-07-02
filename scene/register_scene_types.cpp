@@ -78,6 +78,7 @@
 #include "scene/animation/animation_node_state_machine.h"
 #include "scene/animation/animation_player.h"
 #include "scene/animation/animation_tree.h"
+#include "scene/animation/cubic_bezier.h"
 #include "scene/animation/tween.h"
 #include "scene/audio/audio_stream_player.h"
 #include "scene/debugger/scene_debugger.h"
@@ -454,7 +455,12 @@ void register_scene_types() {
 #endif
 
 	/* REGISTER ANIMATION */
+	GDREGISTER_VIRTUAL_CLASS(Interpolator);
+	GDREGISTER_CLASS(InterpolatorFuncWrapper);
+	GDREGISTER_CLASS(CubicBezier);
 	GDREGISTER_CLASS(Tween);
+	Tween::init_static();
+
 	GDREGISTER_ABSTRACT_CLASS(Tweener);
 	GDREGISTER_CLASS(PropertyTweener);
 	GDREGISTER_CLASS(IntervalTweener);
@@ -1225,6 +1231,7 @@ void unregister_scene_types() {
 	ParticleProcessMaterial::finish_shaders();
 	CanvasItemMaterial::finish_shaders();
 	ColorPicker::finish_shaders();
+	Tween::free_static();
 	SceneStringNames::free();
 }
 

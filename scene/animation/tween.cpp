@@ -32,6 +32,7 @@
 
 #include "scene/main/node.h"
 #include "scene/resources/animation.h"
+#include "scene/animation/easing_equations.h"
 
 #define CHECK_VALID()                                                                                      \
 	ERR_FAIL_COND_V_MSG(!valid, nullptr, "Tween invalid. Either finished or created outside scene tree."); \
@@ -49,7 +50,24 @@ void Tweener::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("finished"));
 }
 
-CubicBezier Tween::default_bezier = CubicBezier(0.25, 0.1, 0.25, 1.0);
+Ref<Interpolator> Tween::default_interpolator;
+
+void Tween::init_static() {
+	Ref<InterpolatorFuncWrapper> ref = memnew(InterpolatorFuncWrapper(&linear::in));
+	default_interpolator = ref;
+}
+
+void Tween::free_static() {
+	default_interpolator.unref();
+}
+
+void Tween::set_default_interpolator(Ref<Interpolator> p_interpolator) {
+	default_interpolator = p_interpolator;
+}
+
+Ref<Interpolator> Tween::get_default_interpolator() {
+	return default_interpolator;
+}
 
 bool Tween::_validate_type_match(const Variant &p_from, Variant &r_to) {
 	if (p_from.get_type() != r_to.get_type()) {
@@ -233,6 +251,15 @@ Ref<Tween> Tween::set_speed_scale(float p_speed) {
 	return this;
 }
 
+Ref<Tween> Tween::set_interpolator(Ref<Interpolator> p_interpolator) {
+	interpolator = p_interpolator;
+	return this;
+}
+
+Ref<Interpolator> Tween::get_interpolator() {
+	return interpolator;
+}
+
 Ref<Tween> Tween::sequence() {
 	sequential = true;
 	last_parallel = false;
@@ -372,19 +399,18 @@ double Tween::get_total_time() const {
 	return total_time;
 }
 
-real_t Tween::run_equation(Ref<CubicBezier> p_ease, real_t p_time, real_t p_initial, real_t p_delta, real_t p_duration) {
+real_t Tween::run_interpolator(const Ref<Interpolator> &p_interpolator, real_t p_time, real_t p_initial, real_t p_delta, real_t p_duration) {
 	if (p_duration == 0) {
 		// Special case to avoid dividing by 0 in equations.
 		return p_initial + p_delta;
 	}
 
-	CubicBezier *bezier = (*p_ease == nullptr) ? &default_bezier : *p_ease;
-	return p_delta * bezier->solve(p_time / p_duration) + p_initial;
+	return p_interpolator->interpolate(p_time, p_initial, p_delta, p_duration);
 }
 
-Variant Tween::interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, Ref<CubicBezier> p_ease) {
+Variant Tween::interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, const Ref<Interpolator> &p_interpolator) {
 	Variant ret = Animation::add_variant(p_initial_val, p_delta_val);
-	ret = Animation::interpolate_variant(p_initial_val, ret, run_equation(p_ease, p_time, 0.0, 1.0, p_duration), p_initial_val.is_string());
+	ret = Animation::interpolate_variant(p_initial_val, ret, run_interpolator(p_interpolator, p_time, 0.0, 1.0, p_duration), p_initial_val.is_string());
 	return ret;
 }
 
@@ -419,11 +445,14 @@ void Tween::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("loop", "loops"), &Tween::set_loops, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_loops_left"), &Tween::get_loops_left);
 	ClassDB::bind_method(D_METHOD("speed_scale", "speed"), &Tween::set_speed_scale);
+	ClassDB::bind_method(D_METHOD("ease", "interpoator"), &Tween::set_interpolator);
 
 	ClassDB::bind_method(D_METHOD("sequence"), &Tween::sequence);
 	ClassDB::bind_method(D_METHOD("parallel"), &Tween::parallel);
 
-	ClassDB::bind_static_method("Tween", D_METHOD("interpolate_value", "initial_value", "delta_value", "elapsed_time", "duration", "ease"), &Tween::interpolate_variant);
+	ClassDB::bind_static_method("Tween", D_METHOD("interpolate_value", "initial_value", "delta_value", "elapsed_time", "duration", "interpolator"), &Tween::interpolate_variant);
+	ClassDB::bind_static_method("Tween", D_METHOD("set_default_interpolator", "interpolator"), &Tween::set_default_interpolator);
+	ClassDB::bind_static_method("Tween", D_METHOD("get_default_interpolator"), &Tween::get_default_interpolator);
 
 	ADD_SIGNAL(MethodInfo("step_finished", PropertyInfo(Variant::INT, "idx")));
 	ADD_SIGNAL(MethodInfo("loop_finished", PropertyInfo(Variant::INT, "loop_count")));
@@ -468,8 +497,8 @@ Ref<PropertyTweener> PropertyTweener::as_relative() {
 	return this;
 }
 
-Ref<PropertyTweener> PropertyTweener::set_ease(const Ref<CubicBezier> &p_ease) {
-	ease = p_ease;
+Ref<PropertyTweener> PropertyTweener::set_interpolator(Ref<Interpolator> p_interpolator) {
+	interpolator = p_interpolator;
 	return this;
 }
 
@@ -486,6 +515,14 @@ void PropertyTweener::start() {
 	if (!target_instance) {
 		WARN_PRINT("Target object freed before starting, aborting Tweener.");
 		return;
+	}
+
+	if (interpolator.is_null()) {
+		if (tween->interpolator.is_null()) {
+			interpolator = Tween::default_interpolator;
+		} else {
+			interpolator = tween->interpolator;
+		}
 	}
 
 	if (do_continue) {
@@ -526,7 +563,7 @@ bool PropertyTweener::step(double &r_delta) {
 
 	double time = MIN(elapsed_time - delay, duration);
 	if (time < duration) {
-		target_instance->set_indexed(property, tween->interpolate_variant(initial_val, delta_val, time, duration, ease));
+		target_instance->set_indexed(property, tween->interpolate_variant(initial_val, delta_val, time, duration, interpolator));
 		r_delta = 0;
 		return true;
 	} else {
@@ -546,7 +583,7 @@ void PropertyTweener::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("from", "value"), &PropertyTweener::from);
 	ClassDB::bind_method(D_METHOD("from_current"), &PropertyTweener::from_current);
 	ClassDB::bind_method(D_METHOD("as_relative"), &PropertyTweener::as_relative);
-	ClassDB::bind_method(D_METHOD("ease", "ease"), &PropertyTweener::set_ease);
+	ClassDB::bind_method(D_METHOD("ease", "interpolator"), &PropertyTweener::set_interpolator);
 	ClassDB::bind_method(D_METHOD("delay", "delay"), &PropertyTweener::set_delay);
 }
 
@@ -658,8 +695,8 @@ Ref<MethodTweener> MethodTweener::set_delay(double p_delay) {
 	return this;
 }
 
-Ref<MethodTweener> MethodTweener::set_ease(const Ref<CubicBezier> &p_ease) {
-	ease = p_ease;
+Ref<MethodTweener> MethodTweener::set_interpolator(Ref<Interpolator> p_interpolator) {
+	interpolator = p_interpolator;
 	return this;
 }
 
@@ -687,7 +724,7 @@ bool MethodTweener::step(double &r_delta) {
 	Variant current_val;
 	double time = MIN(elapsed_time - delay, duration);
 	if (time < duration) {
-		current_val = tween->interpolate_variant(initial_val, delta_val, time, duration, ease);
+		current_val = tween->interpolate_variant(initial_val, delta_val, time, duration, interpolator);
 	} else {
 		current_val = final_val;
 	}
@@ -718,7 +755,7 @@ void MethodTweener::set_tween(const Ref<Tween> &p_tween) {
 
 void MethodTweener::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("delay", "delay"), &MethodTweener::set_delay);
-	ClassDB::bind_method(D_METHOD("ease", "ease"), &MethodTweener::set_ease);
+	ClassDB::bind_method(D_METHOD("ease", "interpolator"), &MethodTweener::set_interpolator);
 }
 
 MethodTweener::MethodTweener(const Callable &p_callback, const Variant &p_from, const Variant &p_to, double p_duration) {
