@@ -31,7 +31,7 @@
 #ifndef TWEEN_H
 #define TWEEN_H
 
-#include "scene/animation/interpolator.h"
+#include "scene/animation/easing_func.h"
 
 class Tween;
 class Node;
@@ -78,7 +78,7 @@ public:
 private:
 	TweenProcessMode process_mode = TweenProcessMode::TWEEN_PROCESS_IDLE;
 	TweenPauseMode pause_mode = TweenPauseMode::TWEEN_PAUSE_BOUND;
-	Ref<Interpolator> interpolator;
+	Ref<EasingFunc> easing_func;
 	ObjectID bound_node;
 
 	Vector<List<Ref<Tweener>>> tweeners;
@@ -99,7 +99,7 @@ private:
 	bool is_infinite = false;
 #endif
 
-	static Ref<Interpolator> default_interpolator;
+	static Ref<EasingFunc> default_easing_func;
 
 	void _start_tweeners();
 	void _stop_internal(bool p_reset);
@@ -112,8 +112,8 @@ public:
 	static void init_static();
 	static void free_static();
 
-	static void set_default_interpolator(Ref<Interpolator> p_interpolator);
-	static Ref<Interpolator> get_default_interpolator();
+	static void set_default_easing_func(Ref<EasingFunc> p_easing_func);
+	static Ref<EasingFunc> get_default_easing_func();
 
 	virtual String to_string() override;
 
@@ -143,14 +143,14 @@ public:
 	Ref<Tween> set_loops(int p_loops);
 	int get_loops_left() const;
 	Ref<Tween> set_speed_scale(float p_speed);
-	Ref<Tween> set_interpolator(Ref<Interpolator> p_interpolator);
-	Ref<Interpolator> get_interpolator();
+	Ref<Tween> set_easing_func(Ref<EasingFunc> p_easing_func);
+	Ref<EasingFunc> get_easing_func();
 
 	Ref<Tween> sequence();
 	Ref<Tween> parallel();
 
-	static real_t run_interpolator(const Ref<Interpolator> &p_interpolator, real_t t, real_t b, real_t c, real_t d);
-	static Variant interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, const Ref<Interpolator> &p_interpolator);
+	static real_t run_equation(const Ref<EasingFunc> &p_easing_func, real_t t, real_t b, real_t c, real_t d);
+	static Variant interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, const Ref<EasingFunc> &p_easing_func);
 
 	bool step(double p_delta);
 	bool can_process(bool p_tree_paused) const;
@@ -171,7 +171,7 @@ public:
 	Ref<PropertyTweener> from(const Variant &p_value);
 	Ref<PropertyTweener> from_current();
 	Ref<PropertyTweener> as_relative();
-	Ref<PropertyTweener> set_interpolator(Ref<Interpolator> p_interpolator);
+	Ref<PropertyTweener> set_easing_func(Ref<EasingFunc> p_easing_func);
 	Ref<PropertyTweener> set_delay(double p_delay);
 
 	void set_tween(const Ref<Tween> &p_tween) override;
@@ -195,7 +195,7 @@ private:
 	Ref<RefCounted> ref_copy; // Makes sure that RefCounted objects are not freed too early.
 
 	double duration = 0;
-	Ref<Interpolator> interpolator;
+	Ref<EasingFunc> easing_func;
 
 	double delay = 0;
 	bool do_continue = true;
@@ -243,7 +243,7 @@ class MethodTweener : public Tweener {
 	GDCLASS(MethodTweener, Tweener);
 
 public:
-	Ref<MethodTweener> set_interpolator(Ref<Interpolator> p_interpolator);
+	Ref<MethodTweener> set_easing_func(Ref<EasingFunc> p_easing_func);
 	Ref<MethodTweener> set_delay(double p_delay);
 
 	void set_tween(const Ref<Tween> &p_tween) override;
@@ -259,7 +259,7 @@ protected:
 private:
 	double duration = 0;
 	double delay = 0;
-	Ref<Interpolator> interpolator;
+	Ref<EasingFunc> easing_func;
 
 	Ref<Tween> tween;
 	Variant initial_val;

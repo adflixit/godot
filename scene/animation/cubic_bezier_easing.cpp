@@ -1,6 +1,6 @@
-#include "cubic_bezier.h"
+#include "cubic_bezier_easing.h"
 
-void CubicBezier::_init_coefficients(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2) {
+void CubicBezierEasing::_init_coefficients(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2) {
 	cx = 3.0 * p_x1;
 	bx = 3.0 * (p_x2 - p_x1) - cx;
 	ax = 1.0 - cx - bx;
@@ -10,7 +10,7 @@ void CubicBezier::_init_coefficients(real_t p_x1, real_t p_y1, real_t p_x2, real
 	ay = 1.0 - cy - by;
 }
 
-void CubicBezier::_init_gradients(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2) {
+void CubicBezierEasing::_init_gradients(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2) {
 	if (p_x1 > 0) {
 		start_gradient = p_y1 / p_x1;
 	} else if (!p_y1 && p_x2 > 0) {
@@ -32,7 +32,7 @@ void CubicBezier::_init_gradients(real_t p_x1, real_t p_y1, real_t p_x2, real_t 
 	}
 }
 
-void CubicBezier::_init_range(real_t p_y1, real_t p_y2) {
+void CubicBezierEasing::_init_range(real_t p_y1, real_t p_y2) {
 	range_min = 0;
 	range_max = 1;
 
@@ -81,14 +81,14 @@ void CubicBezier::_init_range(real_t p_y1, real_t p_y2) {
 	range_max = MAX(MAX(range_max, sol1), sol2);
 }
 
-void CubicBezier::_init_spline() {
+void CubicBezierEasing::_init_spline() {
 	real_t delta_t = 1.0 / (SPLINE_SAMPLES - 1);
 	for (int i = 0; i < SPLINE_SAMPLES; i++) {
 		spline_samples[i] = _sample_curve_x(i * delta_t);
 	}
 }
 
-real_t CubicBezier::_solve_curve_x(real_t p_x, real_t p_epsilon) const {
+real_t CubicBezierEasing::_solve_curve_x(real_t p_x, real_t p_epsilon) const {
 	real_t t0;
 	real_t t1;
 	real_t t2 = p_x;
@@ -140,7 +140,7 @@ real_t CubicBezier::_solve_curve_x(real_t p_x, real_t p_epsilon) const {
 	return t2;
 }
 
-real_t CubicBezier::_solve_with_epsilon(real_t p_x, real_t p_epsilon) const {
+real_t CubicBezierEasing::_solve_with_epsilon(real_t p_x, real_t p_epsilon) const {
 	if (p_x < 0.0) {
 		return 0.0 + start_gradient * p_x;
 	}
@@ -150,27 +150,27 @@ real_t CubicBezier::_solve_with_epsilon(real_t p_x, real_t p_epsilon) const {
 	return _sample_curve_y(_solve_curve_x(p_x, p_epsilon));
 }
 
-Ref<CubicBezier> CubicBezier::create(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2) {
-	Ref<CubicBezier> ref;
+Ref<CubicBezierEasing> CubicBezierEasing::create(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2) {
+	Ref<CubicBezierEasing> ref;
 	ref.instantiate();
 	ref->init(p_x1, p_y1, p_x2, p_y2);
 	return ref;
 }
 
-void CubicBezier::init(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2) {
+void CubicBezierEasing::init(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2) {
 	_init_coefficients(p_x1, p_y1, p_x2, p_y2);
 	_init_gradients(p_x1, p_y1, p_x2, p_y2);
 	_init_range(p_y1, p_y2);
 	_init_spline();
 }
 
-real_t CubicBezier::interpolate(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const {
+real_t CubicBezierEasing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const {
 	return p_c * solve(p_t / p_d) + p_b;
 }
 
-void CubicBezier::_bind_methods() {
-	ClassDB::bind_static_method("CubicBezier", D_METHOD("create", "x1", "y1", "x2", "y2"), &CubicBezier::create);
+void CubicBezierEasing::_bind_methods() {
+	ClassDB::bind_static_method("CubicBezierEasing", D_METHOD("create", "x1", "y1", "x2", "y2"), &CubicBezierEasing::create);
 
-	ClassDB::bind_method(D_METHOD("init", "x1", "y1", "x2", "y2"), &CubicBezier::init);
-	ClassDB::bind_method(D_METHOD("solve", "x"), &CubicBezier::solve);
+	ClassDB::bind_method(D_METHOD("init", "x1", "y1", "x2", "y2"), &CubicBezierEasing::init);
+	ClassDB::bind_method(D_METHOD("solve", "x"), &CubicBezierEasing::solve);
 }

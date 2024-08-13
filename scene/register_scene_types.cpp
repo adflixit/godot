@@ -78,7 +78,7 @@
 #include "scene/animation/animation_node_state_machine.h"
 #include "scene/animation/animation_player.h"
 #include "scene/animation/animation_tree.h"
-#include "scene/animation/cubic_bezier.h"
+#include "scene/animation/cubic_bezier_easing.h"
 #include "scene/animation/tween.h"
 #include "scene/audio/audio_stream_player.h"
 #include "scene/debugger/scene_debugger.h"
@@ -455,9 +455,8 @@ void register_scene_types() {
 #endif
 
 	/* REGISTER ANIMATION */
-	GDREGISTER_VIRTUAL_CLASS(Interpolator);
-	GDREGISTER_CLASS(InterpolatorFuncWrapper);
-	GDREGISTER_CLASS(CubicBezier);
+	GDREGISTER_VIRTUAL_CLASS(EasingFunc);
+	GDREGISTER_CLASS(CubicBezierEasing);
 	GDREGISTER_CLASS(Tween);
 	Tween::init_static();
 

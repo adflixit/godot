@@ -1,10 +1,10 @@
-#ifndef CUBIC_BEZIER_H
-#define CUBIC_BEZIER_H
+#ifndef CUBIC_BEZIER_EASING_H
+#define CUBIC_BEZIER_EASING_H
 
-#include "scene/animation/interpolator.h"
+#include "scene/animation/easing_func.h"
 
-class CubicBezier : public Interpolator {
-	GDCLASS(CubicBezier, Interpolator);
+class CubicBezierEasing : public EasingFunc {
+	GDCLASS(CubicBezierEasing, EasingFunc);
 
 	static const int SPLINE_SAMPLES = 11;
 	static const int MAX_NEWTON_ITERATIONS = 4;
@@ -44,13 +44,13 @@ protected:
 	static void _bind_methods();
 
 public:
-	static Ref<CubicBezier> create(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2);
+	static Ref<CubicBezierEasing> create(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2);
 
 	void init(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2);
 	_FORCE_INLINE_ real_t solve(real_t p_x) const { return _solve_with_epsilon(p_x, BEZIER_EPSILON); }
-	real_t interpolate(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const override;
+	real_t ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const override;
 
-	CubicBezier() {}
+	CubicBezierEasing() {}
 };
 
-#endif // CUBIC_BEZIER_H
+#endif // CUBIC_BEZIER_EASING_H

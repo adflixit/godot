@@ -63,8 +63,8 @@ private:
 	String path_to_file;
 	mutable RID texture;
 	Image::Format format = Image::FORMAT_L8;
-	int w = 0;
-	int h = 0;
+	int width = 0;
+	int height = 0;
 	mutable Ref<BitMap> alpha_cache;
 
 	Error _load_data(const String &p_path, int &r_width, int &r_height, Ref<Image> &image, bool &r_request_3d, bool &r_request_normal, bool &r_request_roughness, int &mipmap_limit, int p_size_limit = 0);
@@ -144,8 +144,8 @@ private:
 	String path_to_file;
 	mutable RID texture;
 	Image::Format format = Image::FORMAT_L8;
-	int w = 0;
-	int h = 0;
+	int width = 0;
+	int height = 0;
 	int layers = 0;
 	bool mipmaps = false;
 	LayeredType layered_type = LayeredType::LAYERED_TYPE_2D_ARRAY;
@@ -232,9 +232,9 @@ private:
 	String path_to_file;
 	mutable RID texture;
 	Image::Format format = Image::FORMAT_L8;
-	int w = 0;
-	int h = 0;
-	int d = 0;
+	int width = 0;
+	int height = 0;
+	int depth = 0;
 	bool mipmaps = false;
 
 	virtual void reload_from_file() override;
