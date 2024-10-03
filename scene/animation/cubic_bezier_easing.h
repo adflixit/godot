@@ -1,10 +1,10 @@
 #ifndef CUBIC_BEZIER_EASING_H
 #define CUBIC_BEZIER_EASING_H
 
-#include "scene/animation/easing_func.h"
+#include "scene/animation/easing.h"
 
-class CubicBezierEasing : public EasingFunc {
-	GDCLASS(CubicBezierEasing, EasingFunc);
+class CubicBezierEasing : public Easing {
+	GDCLASS(CubicBezierEasing, Easing);
 
 	static const int SPLINE_SAMPLES = 11;
 	static const int MAX_NEWTON_ITERATIONS = 4;

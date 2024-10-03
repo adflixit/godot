@@ -455,7 +455,7 @@ void register_scene_types() {
 #endif
 
 	/* REGISTER ANIMATION */
-	GDREGISTER_VIRTUAL_CLASS(EasingFunc);
+	GDREGISTER_VIRTUAL_CLASS(Easing);
 	GDREGISTER_CLASS(CubicBezierEasing);
 	GDREGISTER_CLASS(Tween);
 	Tween::init_static();

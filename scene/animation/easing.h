@@ -1,11 +1,11 @@
-#ifndef EASING_FUNC_H
-#define EASING_FUNC_H
+#ifndef EASING_H
+#define EASING_H
 
 #include "core/object/ref_counted.h"
 #include "core/object/gdvirtual.gen.inc"
 
-class EasingFunc : public RefCounted {
-	GDCLASS(EasingFunc, RefCounted);
+class Easing : public RefCounted {
+	GDCLASS(Easing, RefCounted);
 
 protected:
 	static void _bind_methods();
@@ -15,7 +15,7 @@ protected:
 public:
 	virtual real_t ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const;
 
-	EasingFunc() {}
+	Easing() {}
 };
 
-#endif // EASING_FUNC_H
+#endif // EASING_H
