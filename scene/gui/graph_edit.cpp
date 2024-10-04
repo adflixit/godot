@@ -260,6 +260,8 @@ PackedStringArray GraphEdit::get_configuration_warnings() const {
 }
 
 Error GraphEdit::connect_node(const StringName &p_from, int p_from_port, const StringName &p_to, int p_to_port) {
+	ERR_FAIL_NULL_V_MSG(connections_layer, FAILED, "connections_layer is missing.");
+
 	if (is_node_connected(p_from, p_from_port, p_to, p_to_port)) {
 		return OK;
 	}
@@ -313,6 +315,8 @@ bool GraphEdit::is_node_connected(const StringName &p_from, int p_from_port, con
 }
 
 void GraphEdit::disconnect_node(const StringName &p_from, int p_from_port, const StringName &p_to, int p_to_port) {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
+
 	for (const List<Ref<Connection>>::Element *E = connections.front(); E; E = E->next()) {
 		if (E->get()->from_node == p_from && E->get()->from_port == p_from_port && E->get()->to_node == p_to && E->get()->to_port == p_to_port) {
 			connection_map[p_from].erase(E->get());
@@ -356,6 +360,8 @@ void GraphEdit::_scroll_moved(double) {
 }
 
 void GraphEdit::_update_scroll_offset() {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
+
 	set_block_minimum_size_adjust(true);
 
 	for (int i = 0; i < get_child_count(); i++) {
@@ -524,6 +530,8 @@ void GraphEdit::_graph_element_resize_request(const Vector2 &p_new_minsize, Node
 }
 
 void GraphEdit::_graph_frame_autoshrink_changed(const Vector2 &p_new_minsize, GraphFrame *p_frame) {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
+
 	_update_graph_frame(p_frame);
 
 	minimap->queue_redraw();
@@ -535,6 +543,7 @@ void GraphEdit::_graph_frame_autoshrink_changed(const Vector2 &p_new_minsize, Gr
 void GraphEdit::_graph_element_moved(Node *p_node) {
 	GraphElement *graph_element = Object::cast_to<GraphElement>(p_node);
 	ERR_FAIL_NULL(graph_element);
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
 
 	minimap->queue_redraw();
 	queue_redraw();
@@ -543,8 +552,14 @@ void GraphEdit::_graph_element_moved(Node *p_node) {
 }
 
 void GraphEdit::_graph_node_slot_updated(int p_index, Node *p_node) {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
 	GraphNode *graph_node = Object::cast_to<GraphNode>(p_node);
 	ERR_FAIL_NULL(graph_node);
+
+	// Update all adjacent connections during the next redraw.
+	for (const Ref<Connection> &conn : connection_map[graph_node->get_name()]) {
+		conn->_cache.dirty = true;
+	}
 
 	minimap->queue_redraw();
 	queue_redraw();
@@ -553,6 +568,8 @@ void GraphEdit::_graph_node_slot_updated(int p_index, Node *p_node) {
 }
 
 void GraphEdit::_graph_node_rect_changed(GraphNode *p_node) {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
+
 	// Only invalidate the cache when zooming or the node is moved/resized in graph space.
 	if (panner->is_panning()) {
 		return;
@@ -561,7 +578,6 @@ void GraphEdit::_graph_node_rect_changed(GraphNode *p_node) {
 	for (Ref<Connection> &c : connection_map[p_node->get_name()]) {
 		c->_cache.dirty = true;
 	}
-
 	connections_layer->queue_redraw();
 	callable_mp(this, &GraphEdit::_update_top_connection_layer).call_deferred();
 
@@ -618,7 +634,9 @@ void GraphEdit::add_child_notify(Node *p_child) {
 		}
 		graph_element->connect("raise_request", callable_mp(this, &GraphEdit::_ensure_node_order_from).bind(graph_element));
 		graph_element->connect("resize_request", callable_mp(this, &GraphEdit::_graph_element_resize_request).bind(graph_element));
-		graph_element->connect(SceneStringName(item_rect_changed), callable_mp((CanvasItem *)connections_layer, &CanvasItem::queue_redraw));
+		if (connections_layer != nullptr && connections_layer->is_inside_tree()) {
+			graph_element->connect(SceneStringName(item_rect_changed), callable_mp((CanvasItem *)connections_layer, &CanvasItem::queue_redraw));
+		}
 		graph_element->connect(SceneStringName(item_rect_changed), callable_mp((CanvasItem *)minimap, &GraphEditMinimap::queue_redraw));
 
 		graph_element->set_scale(Vector2(zoom, zoom));
@@ -635,6 +653,7 @@ void GraphEdit::remove_child_notify(Node *p_child) {
 		minimap = nullptr;
 	} else if (p_child == connections_layer) {
 		connections_layer = nullptr;
+		WARN_PRINT("GraphEdit's connection_layer removed. This should not be done. If you like to remove all GraphElements from a GraphEdit node, do not simply remove all non-internal children but check their type since the connection layer has to be kept non-internal due to technical reasons.");
 	}
 
 	if (top_layer != nullptr && is_inside_tree()) {
@@ -657,7 +676,9 @@ void GraphEdit::remove_child_notify(Node *p_child) {
 			for (const Ref<Connection> &conn : connection_map[graph_node->get_name()]) {
 				conn->_cache.dirty = true;
 			}
-			connections_layer->queue_redraw();
+			if (connections_layer != nullptr && connections_layer->is_inside_tree()) {
+				connections_layer->queue_redraw();
+			}
 		}
 
 		GraphFrame *frame = Object::cast_to<GraphFrame>(graph_element);
@@ -690,6 +711,10 @@ void GraphEdit::remove_child_notify(Node *p_child) {
 		graph_element->disconnect("raise_request", callable_mp(this, &GraphEdit::_ensure_node_order_from));
 		graph_element->disconnect("resize_request", callable_mp(this, &GraphEdit::_graph_element_resize_request));
 
+		if (connections_layer != nullptr && connections_layer->is_inside_tree()) {
+			graph_element->disconnect(SceneStringName(item_rect_changed), callable_mp((CanvasItem *)connections_layer, &CanvasItem::queue_redraw));
+		}
+
 		// In case of the whole GraphEdit being destroyed these references can already be freed.
 		if (minimap != nullptr && minimap->is_inside_tree()) {
 			graph_element->disconnect(SceneStringName(item_rect_changed), callable_mp((CanvasItem *)minimap, &GraphEditMinimap::queue_redraw));
@@ -717,7 +742,7 @@ void GraphEdit::_notification(int p_what) {
 
 			zoom_label->set_custom_minimum_size(Size2(48, 0) * theme_cache.base_scale);
 
-			menu_panel->add_theme_style_override("panel", theme_cache.menu_panel);
+			menu_panel->add_theme_style_override(SceneStringName(panel), theme_cache.menu_panel);
 		} break;
 		case NOTIFICATION_READY: {
 			Size2 hmin = h_scrollbar->get_combined_minimum_size();
@@ -782,7 +807,9 @@ Rect2 GraphEdit::_compute_shrinked_frame_rect(const GraphFrame *p_frame) {
 		return Rect2(p_frame->get_position_offset(), Size2());
 	}
 
-	min_point -= Size2(autoshrink_margin, autoshrink_margin);
+	const Size2 titlebar_size = p_frame->get_titlebar_size();
+
+	min_point -= Size2(autoshrink_margin, MAX(autoshrink_margin, titlebar_size.y));
 	max_point += Size2(autoshrink_margin, autoshrink_margin);
 
 	return Rect2(min_point, max_point - min_point);
@@ -901,7 +928,7 @@ bool GraphEdit::_filter_input(const Point2 &p_point) {
 
 		// This prevents interactions with a port hotzone that is behind another node.
 		Rect2 graph_node_rect = Rect2(graph_node->get_position(), graph_node->get_size() * zoom);
-		if (graph_node_rect.has_point(click_pos * zoom)) {
+		if (graph_node_rect.has_point(p_point)) {
 			break;
 		}
 	}
@@ -1033,12 +1060,6 @@ void GraphEdit::_top_connection_layer_input(const Ref<InputEvent> &p_ev) {
 					return;
 				}
 			}
-
-			// This prevents interactions with a port hotzone that is behind another node.
-			Rect2 graph_node_rect = Rect2(graph_node->get_position(), graph_node->get_size() * zoom);
-			if (graph_node_rect.has_point(click_pos * zoom)) {
-				break;
-			}
 		}
 	}
 
@@ -1109,6 +1130,12 @@ void GraphEdit::_top_connection_layer_input(const Ref<InputEvent> &p_ev) {
 						}
 					}
 					connecting_target_valid = false;
+				}
+
+				// This prevents interactions with a port hotzone that is behind another node.
+				Rect2 graph_node_rect = Rect2(graph_node->get_position(), graph_node->get_size() * zoom);
+				if (graph_node_rect.has_point(mm->get_position())) {
+					break;
 				}
 			}
 		}
@@ -1299,18 +1326,26 @@ List<Ref<GraphEdit::Connection>> GraphEdit::get_connections_intersecting_with_re
 	return intersecting_connections;
 }
 
-void GraphEdit::_draw_minimap_connection_line(CanvasItem *p_where, const Vector2 &p_from, const Vector2 &p_to, const Color &p_from_color, const Color &p_to_color) {
-	const Vector<Vector2> &points = get_connection_line(p_from, p_to);
+void GraphEdit::_draw_minimap_connection_line(const Vector2 &p_from_graph_position, const Vector2 &p_to_graph_position, const Color &p_from_color, const Color &p_to_color) {
+	Vector<Vector2> points = get_connection_line(p_from_graph_position, p_to_graph_position);
+	ERR_FAIL_COND_MSG(points.size() < 2, "\"_get_connection_line()\" returned an invalid line.");
+	// Convert to minimap points.
+	for (Vector2 &point : points) {
+		point = minimap->_convert_from_graph_position(point) + minimap->minimap_offset;
+	}
+
+	// Setup polyline colors.
 	LocalVector<Color> colors;
 	colors.reserve(points.size());
-
-	float length_inv = 1.0 / (p_from).distance_to(p_to);
+	const Vector2 &from = points[0];
+	const Vector2 &to = points[points.size() - 1];
+	float length_inv = 1.0 / (from).distance_to(to);
 	for (const Vector2 &point : points) {
-		float normalized_curve_position = (p_from).distance_to(point) * length_inv;
+		float normalized_curve_position = from.distance_to(point) * length_inv;
 		colors.push_back(p_from_color.lerp(p_to_color, normalized_curve_position));
 	}
 
-	p_where->draw_polyline_colors(points, colors, 0.5, lines_antialiased);
+	minimap->draw_polyline_colors(points, colors, 0.5, lines_antialiased);
 }
 
 void GraphEdit::_update_connections() {
@@ -1528,7 +1563,7 @@ void GraphEdit::_minimap_draw() {
 		Ref<StyleBoxFlat> sb_minimap = minimap->theme_cache.node_style->duplicate();
 
 		// Override default values with colors provided by the GraphNode's stylebox, if possible.
-		Ref<StyleBoxFlat> sb_frame = graph_frame->get_theme_stylebox(graph_frame->is_selected() ? SNAME("panel_selected") : SNAME("panel"));
+		Ref<StyleBoxFlat> sb_frame = graph_frame->get_theme_stylebox(graph_frame->is_selected() ? SNAME("panel_selected") : SceneStringName(panel));
 		if (sb_frame.is_valid()) {
 			Color node_color = sb_frame->get_bg_color();
 			if (graph_frame->is_tint_color_enabled()) {
@@ -1565,8 +1600,8 @@ void GraphEdit::_minimap_draw() {
 
 	// Draw node connections.
 	for (const Ref<Connection> &c : connections) {
-		Vector2 from_position = minimap->_convert_from_graph_position(c->_cache.from_pos * zoom - graph_offset) + minimap_offset;
-		Vector2 to_position = minimap->_convert_from_graph_position(c->_cache.to_pos * zoom - graph_offset) + minimap_offset;
+		Vector2 from_graph_position = c->_cache.from_pos * zoom - graph_offset;
+		Vector2 to_graph_position = c->_cache.to_pos * zoom - graph_offset;
 		Color from_color = c->_cache.from_color;
 		Color to_color = c->_cache.to_color;
 
@@ -1574,7 +1609,8 @@ void GraphEdit::_minimap_draw() {
 			from_color = from_color.lerp(theme_cache.activity_color, c->activity);
 			to_color = to_color.lerp(theme_cache.activity_color, c->activity);
 		}
-		_draw_minimap_connection_line(minimap, from_position, to_position, from_color, to_color);
+
+		_draw_minimap_connection_line(from_graph_position, to_graph_position, from_color, to_color);
 	}
 
 	// Draw the "camera" viewport.
@@ -1626,24 +1662,34 @@ void GraphEdit::_draw_grid() {
 			Color transparent_grid_minor = theme_cache.grid_minor;
 			transparent_grid_minor.a *= CLAMP(1.0 * (zoom - 0.4), 0, 1);
 
-			for (int i = from_pos.x; i < from_pos.x + len.x; i++) {
-				for (int j = from_pos.y; j < from_pos.y + len.y; j++) {
-					Color color = transparent_grid_minor;
+			// Minor dots.
+			if (transparent_grid_minor.a != 0) {
+				for (int i = from_pos.x; i < from_pos.x + len.x; i++) {
+					for (int j = from_pos.y; j < from_pos.y + len.y; j++) {
+						if (ABS(i) % GRID_MINOR_STEPS_PER_MAJOR_DOT == 0 && ABS(j) % GRID_MINOR_STEPS_PER_MAJOR_DOT == 0) {
+							continue;
+						}
 
-					if (ABS(i) % GRID_MINOR_STEPS_PER_MAJOR_DOT == 0 && ABS(j) % GRID_MINOR_STEPS_PER_MAJOR_DOT == 0) {
-						color = theme_cache.grid_major;
+						float base_offset_x = i * snapping_distance * zoom - offset.x * zoom;
+						float base_offset_y = j * snapping_distance * zoom - offset.y * zoom;
+
+						draw_rect(Rect2(base_offset_x - 1, base_offset_y - 1, 3, 3), transparent_grid_minor);
 					}
-
-					if (color.a == 0) {
-						continue;
-					}
-
-					float base_offset_x = i * snapping_distance * zoom - offset.x * zoom;
-					float base_offset_y = j * snapping_distance * zoom - offset.y * zoom;
-
-					draw_rect(Rect2(base_offset_x - 1, base_offset_y - 1, 3, 3), color);
 				}
 			}
+
+			// Major dots.
+			if (theme_cache.grid_major.a != 0) {
+				for (int i = from_pos.x - from_pos.x % GRID_MINOR_STEPS_PER_MAJOR_DOT; i < from_pos.x + len.x; i += GRID_MINOR_STEPS_PER_MAJOR_DOT) {
+					for (int j = from_pos.y - from_pos.y % GRID_MINOR_STEPS_PER_MAJOR_DOT; j < from_pos.y + len.y; j += GRID_MINOR_STEPS_PER_MAJOR_DOT) {
+						float base_offset_x = i * snapping_distance * zoom - offset.x * zoom;
+						float base_offset_y = j * snapping_distance * zoom - offset.y * zoom;
+
+						draw_rect(Rect2(base_offset_x - 1, base_offset_y - 1, 3, 3), theme_cache.grid_major);
+					}
+				}
+			}
+
 		} break;
 	}
 }
@@ -1660,6 +1706,8 @@ void GraphEdit::set_selected(Node *p_child) {
 }
 
 void GraphEdit::gui_input(const Ref<InputEvent> &p_ev) {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
+
 	ERR_FAIL_COND(p_ev.is_null());
 	if (panner->gui_input(p_ev, warped_panning ? get_global_rect() : Rect2())) {
 		return;
@@ -1969,6 +2017,9 @@ void GraphEdit::gui_input(const Ref<InputEvent> &p_ev) {
 		} else if (p_ev->is_action("ui_copy", true)) {
 			emit_signal(SNAME("copy_nodes_request"));
 			accept_event();
+		} else if (p_ev->is_action("ui_cut", true)) {
+			emit_signal(SNAME("cut_nodes_request"));
+			accept_event();
 		} else if (p_ev->is_action("ui_paste", true)) {
 			emit_signal(SNAME("paste_nodes_request"));
 			accept_event();
@@ -1992,6 +2043,8 @@ void GraphEdit::gui_input(const Ref<InputEvent> &p_ev) {
 }
 
 void GraphEdit::_pan_callback(Vector2 p_scroll_vec, Ref<InputEvent> p_event) {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
+
 	h_scrollbar->set_value(h_scrollbar->get_value() - p_scroll_vec.x);
 	v_scrollbar->set_value(v_scrollbar->get_value() - p_scroll_vec.y);
 
@@ -2007,6 +2060,8 @@ void GraphEdit::_zoom_callback(float p_zoom_factor, Vector2 p_origin, Ref<InputE
 }
 
 void GraphEdit::set_connection_activity(const StringName &p_from, int p_from_port, const StringName &p_to, int p_to_port, float p_activity) {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
+
 	for (Ref<Connection> &c : connection_map[p_from]) {
 		if (c->from_node == p_from && c->from_port == p_from_port && c->to_node == p_to && c->to_port == p_to_port) {
 			if (!Math::is_equal_approx(c->activity, p_activity)) {
@@ -2023,6 +2078,8 @@ void GraphEdit::set_connection_activity(const StringName &p_from, int p_from_por
 }
 
 void GraphEdit::reset_all_connection_activity() {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
+
 	bool changed = false;
 	for (Ref<Connection> &conn : connections) {
 		if (conn->activity > 0) {
@@ -2037,6 +2094,8 @@ void GraphEdit::reset_all_connection_activity() {
 }
 
 void GraphEdit::clear_connections() {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
+
 	for (Ref<Connection> &c : connections) {
 		c->_cache.line->queue_free();
 	}
@@ -2050,7 +2109,9 @@ void GraphEdit::clear_connections() {
 }
 
 void GraphEdit::force_connection_drag_end() {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
 	ERR_FAIL_COND_MSG(!connecting, "Drag end requested without active drag!");
+
 	connecting = false;
 	connecting_valid = false;
 	minimap->queue_redraw();
@@ -2080,6 +2141,8 @@ void GraphEdit::set_zoom(float p_zoom) {
 }
 
 void GraphEdit::set_zoom_custom(float p_zoom, const Vector2 &p_center) {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
+
 	p_zoom = CLAMP(p_zoom, zoom_min, zoom_max);
 	if (zoom == p_zoom) {
 		return;
@@ -2488,6 +2551,8 @@ bool GraphEdit::is_showing_arrange_button() const {
 }
 
 void GraphEdit::override_connections_shader(const Ref<Shader> &p_shader) {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
+
 	connections_shader = p_shader;
 
 	_invalidate_connection_line_cache();
@@ -2506,6 +2571,8 @@ void GraphEdit::_minimap_toggled() {
 }
 
 void GraphEdit::set_connection_lines_curvature(float p_curvature) {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
+
 	lines_curvature = p_curvature;
 	_invalidate_connection_line_cache();
 	connections_layer->queue_redraw();
@@ -2517,7 +2584,9 @@ float GraphEdit::get_connection_lines_curvature() const {
 }
 
 void GraphEdit::set_connection_lines_thickness(float p_thickness) {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
 	ERR_FAIL_COND_MSG(p_thickness < 0, "Connection lines thickness must be greater than or equal to 0.");
+
 	if (lines_thickness == p_thickness) {
 		return;
 	}
@@ -2532,6 +2601,8 @@ float GraphEdit::get_connection_lines_thickness() const {
 }
 
 void GraphEdit::set_connection_lines_antialiased(bool p_antialiased) {
+	ERR_FAIL_NULL_MSG(connections_layer, "connections_layer is missing.");
+
 	if (lines_antialiased == p_antialiased) {
 		return;
 	}
@@ -2705,6 +2776,7 @@ void GraphEdit::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("connection_drag_ended"));
 
 	ADD_SIGNAL(MethodInfo("copy_nodes_request"));
+	ADD_SIGNAL(MethodInfo("cut_nodes_request"));
 	ADD_SIGNAL(MethodInfo("paste_nodes_request"));
 	ADD_SIGNAL(MethodInfo("duplicate_nodes_request"));
 	ADD_SIGNAL(MethodInfo("delete_nodes_request", PropertyInfo(Variant::ARRAY, "nodes", PROPERTY_HINT_ARRAY_TYPE, "StringName")));
@@ -2807,8 +2879,8 @@ GraphEdit::GraphEdit() {
 	v_scrollbar->set_min(-10000);
 	v_scrollbar->set_max(10000);
 
-	h_scrollbar->connect("value_changed", callable_mp(this, &GraphEdit::_scroll_moved));
-	v_scrollbar->connect("value_changed", callable_mp(this, &GraphEdit::_scroll_moved));
+	h_scrollbar->connect(SceneStringName(value_changed), callable_mp(this, &GraphEdit::_scroll_moved));
+	v_scrollbar->connect(SceneStringName(value_changed), callable_mp(this, &GraphEdit::_scroll_moved));
 
 	// Toolbar menu.
 
@@ -2884,7 +2956,7 @@ GraphEdit::GraphEdit() {
 	snapping_distance_spinbox->set_value(snapping_distance);
 	snapping_distance_spinbox->set_tooltip_text(ETR("Change the snapping distance."));
 	menu_hbox->add_child(snapping_distance_spinbox);
-	snapping_distance_spinbox->connect("value_changed", callable_mp(this, &GraphEdit::_snapping_distance_changed));
+	snapping_distance_spinbox->connect(SceneStringName(value_changed), callable_mp(this, &GraphEdit::_snapping_distance_changed));
 
 	// Extra controls.
 

@@ -770,6 +770,7 @@ void TextShaderEditor::_apply_editor_settings() {
 	code_editor->update_editor_settings();
 
 	trim_trailing_whitespace_on_save = EDITOR_GET("text_editor/behavior/files/trim_trailing_whitespace_on_save");
+	trim_final_newlines_on_save = EDITOR_GET("text_editor/behavior/files/trim_final_newlines_on_save");
 }
 
 void TextShaderEditor::_show_warnings_panel(bool p_show) {
@@ -778,7 +779,7 @@ void TextShaderEditor::_show_warnings_panel(bool p_show) {
 
 void TextShaderEditor::_warning_clicked(const Variant &p_line) {
 	if (p_line.get_type() == Variant::INT) {
-		code_editor->get_text_editor()->set_caret_line(p_line.operator int64_t());
+		code_editor->goto_line_centered(p_line.operator int64_t());
 	}
 }
 
@@ -894,7 +895,7 @@ void TextShaderEditor::_reload() {
 	}
 }
 
-void TextShaderEditor::edit(const Ref<Shader> &p_shader) {
+void TextShaderEditor::edit_shader(const Ref<Shader> &p_shader) {
 	if (p_shader.is_null() || !p_shader->is_text_shader()) {
 		return;
 	}
@@ -909,7 +910,7 @@ void TextShaderEditor::edit(const Ref<Shader> &p_shader) {
 	code_editor->set_edited_shader(shader);
 }
 
-void TextShaderEditor::edit(const Ref<ShaderInclude> &p_shader_inc) {
+void TextShaderEditor::edit_shader_include(const Ref<ShaderInclude> &p_shader_inc) {
 	if (p_shader_inc.is_null()) {
 		return;
 	}
@@ -932,6 +933,10 @@ void TextShaderEditor::save_external_data(const String &p_str) {
 
 	if (trim_trailing_whitespace_on_save) {
 		trim_trailing_whitespace();
+	}
+
+	if (trim_final_newlines_on_save) {
+		trim_final_newlines();
 	}
 
 	apply_shaders();
@@ -958,6 +963,10 @@ void TextShaderEditor::save_external_data(const String &p_str) {
 
 void TextShaderEditor::trim_trailing_whitespace() {
 	code_editor->trim_trailing_whitespace();
+}
+
+void TextShaderEditor::trim_final_newlines() {
+	code_editor->trim_final_newlines();
 }
 
 void TextShaderEditor::validate_script() {
@@ -1129,9 +1138,10 @@ TextShaderEditor::TextShaderEditor() {
 
 	context_menu = memnew(PopupMenu);
 	add_child(context_menu);
-	context_menu->connect("id_pressed", callable_mp(this, &TextShaderEditor::_menu_option));
+	context_menu->connect(SceneStringName(id_pressed), callable_mp(this, &TextShaderEditor::_menu_option));
 
 	VBoxContainer *main_container = memnew(VBoxContainer);
+	main_container->set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);
 	HBoxContainer *hbc = memnew(HBoxContainer);
 
 	edit_menu = memnew(MenuButton);
@@ -1160,7 +1170,7 @@ TextShaderEditor::TextShaderEditor() {
 	edit_menu->get_popup()->add_shortcut(ED_GET_SHORTCUT("script_text_editor/toggle_word_wrap"), EDIT_TOGGLE_WORD_WRAP);
 	edit_menu->get_popup()->add_separator();
 	edit_menu->get_popup()->add_shortcut(ED_GET_SHORTCUT("ui_text_completion_query"), EDIT_COMPLETE);
-	edit_menu->get_popup()->connect("id_pressed", callable_mp(this, &TextShaderEditor::_menu_option));
+	edit_menu->get_popup()->connect(SceneStringName(id_pressed), callable_mp(this, &TextShaderEditor::_menu_option));
 
 	search_menu = memnew(MenuButton);
 	search_menu->set_shortcut_context(this);
@@ -1171,13 +1181,13 @@ TextShaderEditor::TextShaderEditor() {
 	search_menu->get_popup()->add_shortcut(ED_GET_SHORTCUT("script_text_editor/find_next"), SEARCH_FIND_NEXT);
 	search_menu->get_popup()->add_shortcut(ED_GET_SHORTCUT("script_text_editor/find_previous"), SEARCH_FIND_PREV);
 	search_menu->get_popup()->add_shortcut(ED_GET_SHORTCUT("script_text_editor/replace"), SEARCH_REPLACE);
-	search_menu->get_popup()->connect("id_pressed", callable_mp(this, &TextShaderEditor::_menu_option));
+	search_menu->get_popup()->connect(SceneStringName(id_pressed), callable_mp(this, &TextShaderEditor::_menu_option));
 
 	MenuButton *goto_menu = memnew(MenuButton);
 	goto_menu->set_shortcut_context(this);
 	goto_menu->set_text(TTR("Go To"));
 	goto_menu->set_switch_on_hover(true);
-	goto_menu->get_popup()->connect("id_pressed", callable_mp(this, &TextShaderEditor::_menu_option));
+	goto_menu->get_popup()->connect(SceneStringName(id_pressed), callable_mp(this, &TextShaderEditor::_menu_option));
 
 	goto_menu->get_popup()->add_shortcut(ED_GET_SHORTCUT("script_text_editor/goto_line"), SEARCH_GOTO_LINE);
 	goto_menu->get_popup()->add_separator();
@@ -1192,7 +1202,7 @@ TextShaderEditor::TextShaderEditor() {
 	help_menu->set_text(TTR("Help"));
 	help_menu->set_switch_on_hover(true);
 	help_menu->get_popup()->add_item(TTR("Online Docs"), HELP_DOCS);
-	help_menu->get_popup()->connect("id_pressed", callable_mp(this, &TextShaderEditor::_menu_option));
+	help_menu->get_popup()->connect(SceneStringName(id_pressed), callable_mp(this, &TextShaderEditor::_menu_option));
 
 	add_child(main_container);
 	main_container->add_child(hbc);
@@ -1200,7 +1210,7 @@ TextShaderEditor::TextShaderEditor() {
 	hbc->add_child(edit_menu);
 	hbc->add_child(goto_menu);
 	hbc->add_child(help_menu);
-	hbc->add_theme_style_override("panel", EditorNode::get_singleton()->get_editor_theme()->get_stylebox(SNAME("ScriptEditorPanel"), EditorStringName(EditorStyles)));
+	hbc->add_theme_style_override(SceneStringName(panel), EditorNode::get_singleton()->get_editor_theme()->get_stylebox(SNAME("ScriptEditorPanel"), EditorStringName(EditorStyles)));
 
 	VSplitContainer *editor_box = memnew(VSplitContainer);
 	main_container->add_child(editor_box);
@@ -1237,7 +1247,7 @@ TextShaderEditor::TextShaderEditor() {
 	dl->set_text(TTR("This shader has been modified on disk.\nWhat action should be taken?"));
 	vbc->add_child(dl);
 
-	disk_changed->connect("confirmed", callable_mp(this, &TextShaderEditor::_reload));
+	disk_changed->connect(SceneStringName(confirmed), callable_mp(this, &TextShaderEditor::_reload));
 	disk_changed->set_ok_button_text(TTR("Reload"));
 
 	disk_changed->add_button(TTR("Resave"), !DisplayServer::get_singleton()->get_swap_cancel_ok(), "resave");
@@ -1246,4 +1256,5 @@ TextShaderEditor::TextShaderEditor() {
 	add_child(disk_changed);
 
 	_editor_settings_changed();
+	code_editor->show_toggle_scripts_button(); // TODO: Disabled for now, because it doesn't work properly.
 }
