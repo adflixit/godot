@@ -40,6 +40,7 @@
 #include "scene/animation/animation_node_state_machine.h"
 #include "scene/animation/animation_player.h"
 #include "scene/animation/animation_tree.h"
+#include "scene/animation/cubic_bezier_easing.h"
 #include "scene/animation/tween.h"
 #include "scene/audio/audio_stream_player.h"
 #include "scene/debugger/scene_debugger.h"
@@ -494,7 +495,12 @@ void register_scene_types() {
 	Window::set_root_layout_direction(root_dir);
 
 	/* REGISTER ANIMATION */
+
+	GDREGISTER_VIRTUAL_CLASS(Easing);
+	GDREGISTER_CLASS(CubicBezierEasing);
 	GDREGISTER_CLASS(Tween);
+	Tween::init_static();
+
 	GDREGISTER_ABSTRACT_CLASS(Tweener);
 	GDREGISTER_CLASS(PropertyTweener);
 	GDREGISTER_CLASS(IntervalTweener);
@@ -1282,6 +1288,7 @@ void unregister_scene_types() {
 	CanvasItemMaterial::finish_shaders();
 	ColorPicker::finish_shaders();
 	GraphEdit::finish_shaders();
+	Tween::free_static();
 	SceneStringNames::free();
 
 	OS::get_singleton()->benchmark_end_measure("Scene", "Unregister Types");
