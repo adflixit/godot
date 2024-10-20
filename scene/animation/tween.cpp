@@ -30,28 +30,13 @@
 
 #include "tween.h"
 
-#include "scene/animation/easing_equations.h"
 #include "scene/main/node.h"
 #include "scene/resources/animation.h"
+#include "scene/animation/cubic_bezier_easing.h"
 
 #define CHECK_VALID()                                                                                      \
 	ERR_FAIL_COND_V_MSG(!valid, nullptr, "Tween invalid. Either finished or created outside scene tree."); \
 	ERR_FAIL_COND_V_MSG(started, nullptr, "Can't append to a Tween that has started. Use stop() first.");
-
-Tween::interpolater Tween::interpolaters[Tween::TRANS_MAX][Tween::EASE_MAX] = {
-	{ &linear::in, &linear::in, &linear::in, &linear::in }, // Linear is the same for each easing.
-	{ &sine::in, &sine::out, &sine::in_out, &sine::out_in },
-	{ &quint::in, &quint::out, &quint::in_out, &quint::out_in },
-	{ &quart::in, &quart::out, &quart::in_out, &quart::out_in },
-	{ &quad::in, &quad::out, &quad::in_out, &quad::out_in },
-	{ &expo::in, &expo::out, &expo::in_out, &expo::out_in },
-	{ &elastic::in, &elastic::out, &elastic::in_out, &elastic::out_in },
-	{ &cubic::in, &cubic::out, &cubic::in_out, &cubic::out_in },
-	{ &circ::in, &circ::out, &circ::in_out, &circ::out_in },
-	{ &bounce::in, &bounce::out, &bounce::in_out, &bounce::out_in },
-	{ &back::in, &back::out, &back::in_out, &back::out_in },
-	{ &spring::in, &spring::out, &spring::in_out, &spring::out_in },
-};
 
 void Tweener::set_tween(const Ref<Tween> &p_tween) {
 	tween_id = p_tween->get_instance_id();
@@ -68,6 +53,25 @@ void Tweener::_finish() {
 
 void Tweener::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("finished"));
+}
+
+Ref<Easing> Tween::default_easing;
+
+void Tween::init_static() {
+	Ref<CubicBezierEasing> ref = CubicBezierEasing::create(0.0, 0.0, 1.0, 1.0);
+	default_easing = ref;
+}
+
+void Tween::free_static() {
+	default_easing.unref();
+}
+
+void Tween::set_default_easing(Ref<Easing> p_easing) {
+	default_easing = p_easing;
+}
+
+Ref<Easing> Tween::get_default_easing() {
+	return default_easing;
 }
 
 bool Tween::_validate_type_match(const Variant &p_from, Variant &r_to) {
@@ -157,12 +161,14 @@ Ref<MethodTweener> Tween::tween_method(const Callable &p_callback, const Variant
 void Tween::append(Ref<Tweener> p_tweener) {
 	p_tweener->set_tween(this);
 
-	if (parallel_enabled) {
-		current_step = MAX(current_step, 0);
-	} else {
+	if (sequential) {
 		current_step++;
+	} else if (last_parallel) {
+		last_parallel = false;
+		current_step++;
+	} else {
+		current_step = MAX(current_step, 0);
 	}
-	parallel_enabled = default_parallel;
 
 	tweeners.resize(current_step + 1);
 	tweeners.write[current_step].push_back(p_tweener);
@@ -226,12 +232,6 @@ Tween::TweenPauseMode Tween::get_pause_mode() {
 	return pause_mode;
 }
 
-Ref<Tween> Tween::set_parallel(bool p_parallel) {
-	default_parallel = p_parallel;
-	parallel_enabled = p_parallel;
-	return this;
-}
-
 Ref<Tween> Tween::set_loops(int p_loops) {
 	loops = p_loops;
 	return this;
@@ -250,31 +250,24 @@ Ref<Tween> Tween::set_speed_scale(float p_speed) {
 	return this;
 }
 
-Ref<Tween> Tween::set_trans(TransitionType p_trans) {
-	default_transition = p_trans;
+Ref<Tween> Tween::set_easing(Ref<Easing> p_easing) {
+	easing = p_easing;
 	return this;
 }
 
-Tween::TransitionType Tween::get_trans() {
-	return default_transition;
+Ref<Easing> Tween::get_easing() {
+	return easing;
 }
 
-Ref<Tween> Tween::set_ease(EaseType p_ease) {
-	default_ease = p_ease;
+Ref<Tween> Tween::sequence() {
+	sequential = true;
+	last_parallel = false;
 	return this;
-}
-
-Tween::EaseType Tween::get_ease() {
-	return default_ease;
 }
 
 Ref<Tween> Tween::parallel() {
-	parallel_enabled = true;
-	return this;
-}
-
-Ref<Tween> Tween::chain() {
-	parallel_enabled = false;
+	sequential = false;
+	last_parallel = true;
 	return this;
 }
 
@@ -405,22 +398,18 @@ double Tween::get_total_time() const {
 	return total_time;
 }
 
-real_t Tween::run_equation(TransitionType p_trans_type, EaseType p_ease_type, real_t p_time, real_t p_initial, real_t p_delta, real_t p_duration) {
+real_t Tween::run_equation(const Ref<Easing> &p_easing, real_t p_time, real_t p_initial, real_t p_delta, real_t p_duration) {
 	if (p_duration == 0) {
 		// Special case to avoid dividing by 0 in equations.
 		return p_initial + p_delta;
 	}
 
-	interpolater func = interpolaters[p_trans_type][p_ease_type];
-	return func(p_time, p_initial, p_delta, p_duration);
+	return p_easing->ease(p_time, p_initial, p_delta, p_duration);
 }
 
-Variant Tween::interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, TransitionType p_trans, EaseType p_ease) {
-	ERR_FAIL_INDEX_V(p_trans, TransitionType::TRANS_MAX, Variant());
-	ERR_FAIL_INDEX_V(p_ease, EaseType::EASE_MAX, Variant());
-
+Variant Tween::interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, const Ref<Easing> &p_easing) {
 	Variant ret = Animation::add_variant(p_initial_val, p_delta_val);
-	ret = Animation::interpolate_variant(p_initial_val, ret, run_equation(p_trans, p_ease, p_time, 0.0, 1.0, p_duration), p_initial_val.is_string());
+	ret = Animation::interpolate_variant(p_initial_val, ret, run_equation(p_easing, p_time, 0.0, 1.0, p_duration), p_initial_val.is_string());
 	return ret;
 }
 
@@ -434,10 +423,10 @@ String Tween::to_string() {
 }
 
 void Tween::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("tween_property", "object", "property", "final_val", "duration"), &Tween::tween_property);
-	ClassDB::bind_method(D_METHOD("tween_interval", "time"), &Tween::tween_interval);
-	ClassDB::bind_method(D_METHOD("tween_callback", "callback"), &Tween::tween_callback);
-	ClassDB::bind_method(D_METHOD("tween_method", "method", "from", "to", "duration"), &Tween::tween_method);
+	ClassDB::bind_method(D_METHOD("property", "object", "property", "final_val", "duration"), &Tween::tween_property);
+	ClassDB::bind_method(D_METHOD("interval", "time"), &Tween::tween_interval);
+	ClassDB::bind_method(D_METHOD("callback", "callback"), &Tween::tween_callback);
+	ClassDB::bind_method(D_METHOD("method", "method", "from", "to", "duration"), &Tween::tween_method);
 
 	ClassDB::bind_method(D_METHOD("custom_step", "delta"), &Tween::custom_step);
 	ClassDB::bind_method(D_METHOD("stop"), &Tween::stop);
@@ -452,17 +441,17 @@ void Tween::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_process_mode", "mode"), &Tween::set_process_mode);
 	ClassDB::bind_method(D_METHOD("set_pause_mode", "mode"), &Tween::set_pause_mode);
 
-	ClassDB::bind_method(D_METHOD("set_parallel", "parallel"), &Tween::set_parallel, DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("set_loops", "loops"), &Tween::set_loops, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("loop", "loops"), &Tween::set_loops, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_loops_left"), &Tween::get_loops_left);
-	ClassDB::bind_method(D_METHOD("set_speed_scale", "speed"), &Tween::set_speed_scale);
-	ClassDB::bind_method(D_METHOD("set_trans", "trans"), &Tween::set_trans);
-	ClassDB::bind_method(D_METHOD("set_ease", "ease"), &Tween::set_ease);
+	ClassDB::bind_method(D_METHOD("set_speed_scale", "scale"), &Tween::set_speed_scale);
+	ClassDB::bind_method(D_METHOD("ease", "easing"), &Tween::set_easing);
 
+	ClassDB::bind_method(D_METHOD("sequence"), &Tween::sequence);
 	ClassDB::bind_method(D_METHOD("parallel"), &Tween::parallel);
-	ClassDB::bind_method(D_METHOD("chain"), &Tween::chain);
 
-	ClassDB::bind_static_method("Tween", D_METHOD("interpolate_value", "initial_value", "delta_value", "elapsed_time", "duration", "trans_type", "ease_type"), &Tween::interpolate_variant);
+	ClassDB::bind_static_method("Tween", D_METHOD("interpolate_value", "initial_value", "delta_value", "elapsed_time", "duration", "easing"), &Tween::interpolate_variant);
+	ClassDB::bind_static_method("Tween", D_METHOD("set_default_easing", "easing"), &Tween::set_default_easing);
+	ClassDB::bind_static_method("Tween", D_METHOD("get_default_easing"), &Tween::get_default_easing);
 
 	ADD_SIGNAL(MethodInfo("step_finished", PropertyInfo(Variant::INT, "idx")));
 	ADD_SIGNAL(MethodInfo("loop_finished", PropertyInfo(Variant::INT, "loop_count")));
@@ -474,24 +463,6 @@ void Tween::_bind_methods() {
 	BIND_ENUM_CONSTANT(TWEEN_PAUSE_BOUND);
 	BIND_ENUM_CONSTANT(TWEEN_PAUSE_STOP);
 	BIND_ENUM_CONSTANT(TWEEN_PAUSE_PROCESS);
-
-	BIND_ENUM_CONSTANT(TRANS_LINEAR);
-	BIND_ENUM_CONSTANT(TRANS_SINE);
-	BIND_ENUM_CONSTANT(TRANS_QUINT);
-	BIND_ENUM_CONSTANT(TRANS_QUART);
-	BIND_ENUM_CONSTANT(TRANS_QUAD);
-	BIND_ENUM_CONSTANT(TRANS_EXPO);
-	BIND_ENUM_CONSTANT(TRANS_ELASTIC);
-	BIND_ENUM_CONSTANT(TRANS_CUBIC);
-	BIND_ENUM_CONSTANT(TRANS_CIRC);
-	BIND_ENUM_CONSTANT(TRANS_BOUNCE);
-	BIND_ENUM_CONSTANT(TRANS_BACK);
-	BIND_ENUM_CONSTANT(TRANS_SPRING);
-
-	BIND_ENUM_CONSTANT(EASE_IN);
-	BIND_ENUM_CONSTANT(EASE_OUT);
-	BIND_ENUM_CONSTANT(EASE_IN_OUT);
-	BIND_ENUM_CONSTANT(EASE_OUT_IN);
 }
 
 Tween::Tween() {
@@ -526,18 +497,8 @@ Ref<PropertyTweener> PropertyTweener::as_relative() {
 	return this;
 }
 
-Ref<PropertyTweener> PropertyTweener::set_trans(Tween::TransitionType p_trans) {
-	trans_type = p_trans;
-	return this;
-}
-
-Ref<PropertyTweener> PropertyTweener::set_ease(Tween::EaseType p_ease) {
-	ease_type = p_ease;
-	return this;
-}
-
-Ref<PropertyTweener> PropertyTweener::set_custom_interpolator(const Callable &p_method) {
-	custom_method = p_method;
+Ref<PropertyTweener> PropertyTweener::set_easing(Ref<Easing> p_easing) {
+	easing = p_easing;
 	return this;
 }
 
@@ -554,6 +515,14 @@ void PropertyTweener::start() {
 	if (!target_instance) {
 		WARN_PRINT("Target object freed before starting, aborting Tweener.");
 		return;
+	}
+
+	if (easing.is_null()) {
+		if (tween->easing.is_null()) {
+			easing = Tween::default_easing;
+		} else {
+			easing = tween->easing;
+		}
 	}
 
 	if (do_continue) {
@@ -597,23 +566,7 @@ bool PropertyTweener::step(double &r_delta) {
 
 	double time = MIN(elapsed_time - delay, duration);
 	if (time < duration) {
-		if (custom_method.is_valid()) {
-			const Variant t = tween->interpolate_variant(0.0, 1.0, time, duration, trans_type, ease_type);
-			const Variant *argptr = &t;
-
-			Variant result;
-			Callable::CallError ce;
-			custom_method.callp(&argptr, 1, result, ce);
-			if (ce.error != Callable::CallError::CALL_OK) {
-				ERR_FAIL_V_MSG(false, "Error calling custom method from PropertyTweener: " + Variant::get_callable_error_text(custom_method, &argptr, 1, ce) + ".");
-			} else if (result.get_type() != Variant::FLOAT) {
-				ERR_FAIL_V_MSG(false, vformat("Wrong return type in PropertyTweener custom method. Expected float, got %s.", Variant::get_type_name(result.get_type())));
-			}
-
-			target_instance->set_indexed(property, Animation::interpolate_variant(initial_val, final_val, result));
-		} else {
-			target_instance->set_indexed(property, tween->interpolate_variant(initial_val, delta_val, time, duration, trans_type, ease_type));
-		}
+		target_instance->set_indexed(property, tween->interpolate_variant(initial_val, delta_val, time, duration, easing));
 		r_delta = 0;
 		return true;
 	} else {
@@ -625,7 +578,6 @@ bool PropertyTweener::step(double &r_delta) {
 }
 
 void PropertyTweener::set_tween(const Ref<Tween> &p_tween) {
-	Tweener::set_tween(p_tween);
 	if (trans_type == Tween::TRANS_MAX) {
 		trans_type = p_tween->get_trans();
 	}
@@ -638,10 +590,8 @@ void PropertyTweener::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("from", "value"), &PropertyTweener::from);
 	ClassDB::bind_method(D_METHOD("from_current"), &PropertyTweener::from_current);
 	ClassDB::bind_method(D_METHOD("as_relative"), &PropertyTweener::as_relative);
-	ClassDB::bind_method(D_METHOD("set_trans", "trans"), &PropertyTweener::set_trans);
-	ClassDB::bind_method(D_METHOD("set_ease", "ease"), &PropertyTweener::set_ease);
-	ClassDB::bind_method(D_METHOD("set_custom_interpolator", "interpolator_method"), &PropertyTweener::set_custom_interpolator);
-	ClassDB::bind_method(D_METHOD("set_delay", "delay"), &PropertyTweener::set_delay);
+	ClassDB::bind_method(D_METHOD("ease", "easing"), &PropertyTweener::set_easing);
+	ClassDB::bind_method(D_METHOD("delay", "delay"), &PropertyTweener::set_delay);
 }
 
 PropertyTweener::PropertyTweener(const Object *p_target, const Vector<StringName> &p_property, const Variant &p_to, double p_duration) {
@@ -730,7 +680,7 @@ bool CallbackTweener::step(double &r_delta) {
 }
 
 void CallbackTweener::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_delay", "delay"), &CallbackTweener::set_delay);
+	ClassDB::bind_method(D_METHOD("delay", "delay"), &CallbackTweener::set_delay);
 }
 
 CallbackTweener::CallbackTweener(const Callable &p_callback) {
@@ -751,13 +701,8 @@ Ref<MethodTweener> MethodTweener::set_delay(double p_delay) {
 	return this;
 }
 
-Ref<MethodTweener> MethodTweener::set_trans(Tween::TransitionType p_trans) {
-	trans_type = p_trans;
-	return this;
-}
-
-Ref<MethodTweener> MethodTweener::set_ease(Tween::EaseType p_ease) {
-	ease_type = p_ease;
+Ref<MethodTweener> MethodTweener::set_easing(Ref<Easing> p_easing) {
+	easing = p_easing;
 	return this;
 }
 
@@ -788,7 +733,7 @@ bool MethodTweener::step(double &r_delta) {
 	Variant current_val;
 	double time = MIN(elapsed_time - delay, duration);
 	if (time < duration) {
-		current_val = tween->interpolate_variant(initial_val, delta_val, time, duration, trans_type, ease_type);
+		current_val = tween->interpolate_variant(initial_val, delta_val, time, duration, easing);
 	} else {
 		current_val = final_val;
 	}
@@ -813,7 +758,6 @@ bool MethodTweener::step(double &r_delta) {
 }
 
 void MethodTweener::set_tween(const Ref<Tween> &p_tween) {
-	Tweener::set_tween(p_tween);
 	if (trans_type == Tween::TRANS_MAX) {
 		trans_type = p_tween->get_trans();
 	}
@@ -823,9 +767,8 @@ void MethodTweener::set_tween(const Ref<Tween> &p_tween) {
 }
 
 void MethodTweener::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_delay", "delay"), &MethodTweener::set_delay);
-	ClassDB::bind_method(D_METHOD("set_trans", "trans"), &MethodTweener::set_trans);
-	ClassDB::bind_method(D_METHOD("set_ease", "ease"), &MethodTweener::set_ease);
+	ClassDB::bind_method(D_METHOD("delay", "delay"), &MethodTweener::set_delay);
+	ClassDB::bind_method(D_METHOD("ease", "easing"), &MethodTweener::set_easing);
 }
 
 MethodTweener::MethodTweener(const Callable &p_callback, const Variant &p_from, const Variant &p_to, double p_duration) {
