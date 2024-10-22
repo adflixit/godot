@@ -42,8 +42,8 @@ class ImageTexture : public Texture2D {
 	mutable RID texture;
 	Image::Format format = Image::FORMAT_L8;
 	bool mipmaps = false;
-	int width = 0;
-	int height = 0;
+	int w = 0;
+	int h = 0;
 	Size2 size_override;
 	mutable Ref<BitMap> alpha_cache;
 	bool image_stored = false;

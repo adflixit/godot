@@ -84,8 +84,8 @@ Ref<ImageTexture> ImageTexture::create_from_image(const Ref<Image> &p_image) {
 
 void ImageTexture::set_image(const Ref<Image> &p_image) {
 	ERR_FAIL_COND_MSG(p_image.is_null() || p_image->is_empty(), "Invalid image");
-	width = p_image->get_width();
-	height = p_image->get_height();
+	w = p_image->get_width();
+	h = p_image->get_height();
 	format = p_image->get_format();
 	mipmaps = p_image->has_mipmaps();
 
@@ -108,7 +108,7 @@ Image::Format ImageTexture::get_format() const {
 void ImageTexture::update(const Ref<Image> &p_image) {
 	ERR_FAIL_COND_MSG(p_image.is_null(), "Invalid image");
 	ERR_FAIL_COND_MSG(texture.is_null(), "Texture is not initialized.");
-	ERR_FAIL_COND_MSG(p_image->get_width() != width || p_image->get_height() != height,
+	ERR_FAIL_COND_MSG(p_image->get_width() != w || p_image->get_height() != h,
 			"The new image dimensions must match the texture size.");
 	ERR_FAIL_COND_MSG(p_image->get_format() != format,
 			"The new image format must match the texture's image format.");
@@ -133,11 +133,11 @@ Ref<Image> ImageTexture::get_image() const {
 }
 
 int ImageTexture::get_width() const {
-	return width;
+	return w;
 }
 
 int ImageTexture::get_height() const {
-	return height;
+	return h;
 }
 
 RID ImageTexture::get_rid() const {
@@ -153,21 +153,21 @@ bool ImageTexture::has_alpha() const {
 }
 
 void ImageTexture::draw(RID p_canvas_item, const Point2 &p_pos, const Color &p_modulate, bool p_transpose) const {
-	if ((width | height) == 0) {
+	if ((w | h) == 0) {
 		return;
 	}
-	RenderingServer::get_singleton()->canvas_item_add_texture_rect(p_canvas_item, Rect2(p_pos, Size2(width, height)), texture, false, p_modulate, p_transpose);
+	RenderingServer::get_singleton()->canvas_item_add_texture_rect(p_canvas_item, Rect2(p_pos, Size2(w, h)), texture, false, p_modulate, p_transpose);
 }
 
 void ImageTexture::draw_rect(RID p_canvas_item, const Rect2 &p_rect, bool p_tile, const Color &p_modulate, bool p_transpose) const {
-	if ((width | height) == 0) {
+	if ((w | h) == 0) {
 		return;
 	}
 	RenderingServer::get_singleton()->canvas_item_add_texture_rect(p_canvas_item, p_rect, texture, p_tile, p_modulate, p_transpose);
 }
 
 void ImageTexture::draw_rect_region(RID p_canvas_item, const Rect2 &p_rect, const Rect2 &p_src_rect, const Color &p_modulate, bool p_transpose, bool p_clip_uv) const {
-	if ((width | height) == 0) {
+	if ((w | h) == 0) {
 		return;
 	}
 	RenderingServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, p_rect, texture, p_src_rect, p_modulate, p_transpose, p_clip_uv);
@@ -188,17 +188,17 @@ bool ImageTexture::is_pixel_opaque(int p_x, int p_y) const {
 	}
 
 	if (alpha_cache.is_valid()) {
-		int alpha_width = int(alpha_cache->get_size().width);
-		int alpha_height = int(alpha_cache->get_size().height);
-		if (alpha_width == 0 || alpha_height == 0) {
+		int aw = int(alpha_cache->get_size().width);
+		int ah = int(alpha_cache->get_size().height);
+		if (aw == 0 || ah == 0) {
 			return true;
 		}
 
-		int x = p_x * alpha_width / width;
-		int y = p_y * alpha_height / height;
+		int x = p_x * aw / w;
+		int y = p_y * ah / h;
 
-		x = CLAMP(x, 0, alpha_width);
-		y = CLAMP(y, 0, alpha_height);
+		x = CLAMP(x, 0, aw);
+		y = CLAMP(y, 0, ah);
 
 		return alpha_cache->get_bit(x, y);
 	}
@@ -207,14 +207,14 @@ bool ImageTexture::is_pixel_opaque(int p_x, int p_y) const {
 }
 
 void ImageTexture::set_size_override(const Size2i &p_size) {
-	Size2i size = p_size;
-	if (size.x != 0) {
-		width = size.x;
+	Size2i s = p_size;
+	if (s.x != 0) {
+		w = s.x;
 	}
-	if (size.y != 0) {
-		height = size.y;
+	if (s.y != 0) {
+		h = s.y;
 	}
-	RenderingServer::get_singleton()->texture_set_size_override(texture, width, height);
+	RenderingServer::get_singleton()->texture_set_size_override(texture, w, h);
 }
 
 void ImageTexture::set_path(const String &p_path, bool p_take_over) {

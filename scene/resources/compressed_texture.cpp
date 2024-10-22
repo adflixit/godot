@@ -37,30 +37,30 @@ Error CompressedTexture2D::_load_data(const String &p_path, int &r_width, int &r
 
 	ERR_FAIL_COND_V(image.is_null(), ERR_INVALID_PARAMETER);
 
-	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
-	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, vformat("Unable to open file: %s.", p_path));
+	Ref<FileAccess> f = FileAccess::open(p_path, FileAccess::READ);
+	ERR_FAIL_COND_V_MSG(f.is_null(), ERR_CANT_OPEN, vformat("Unable to open file: %s.", p_path));
 
 	uint8_t header[4];
-	file->get_buffer(header, 4);
+	f->get_buffer(header, 4);
 	if (header[0] != 'G' || header[1] != 'S' || header[2] != 'T' || header[3] != '2') {
 		ERR_FAIL_V_MSG(ERR_FILE_CORRUPT, "Compressed texture file is corrupt (Bad header).");
 	}
 
-	uint32_t version = file->get_32();
+	uint32_t version = f->get_32();
 
 	if (version > FORMAT_VERSION) {
 		ERR_FAIL_V_MSG(ERR_FILE_CORRUPT, "Compressed texture file is too new.");
 	}
-	r_width = file->get_32();
-	r_height = file->get_32();
-	uint32_t df = file->get_32(); //data format
+	r_width = f->get_32();
+	r_height = f->get_32();
+	uint32_t df = f->get_32(); //data format
 
 	//skip reserved
-	mipmap_limit = int(file->get_32());
+	mipmap_limit = int(f->get_32());
 	//reserved
-	file->get_32();
-	file->get_32();
-	file->get_32();
+	f->get_32();
+	f->get_32();
+	f->get_32();
 
 #ifdef TOOLS_ENABLED
 
@@ -79,7 +79,7 @@ Error CompressedTexture2D::_load_data(const String &p_path, int &r_width, int &r
 		p_size_limit = 0;
 	}
 
-	image = load_image_from_file(file, p_size_limit);
+	image = load_image_from_file(f, p_size_limit);
 
 	if (image.is_null() || image->is_empty()) {
 		return ERR_CANT_OPEN;
@@ -150,8 +150,8 @@ Error CompressedTexture2D::load(const String &p_path) {
 		RS::get_singleton()->texture_set_size_override(texture, lw, lh);
 	}
 
-	width = lw;
-	height = lh;
+	w = lw;
+	h = lh;
 	path_to_file = p_path;
 	format = image->get_format();
 
@@ -197,11 +197,11 @@ String CompressedTexture2D::get_load_path() const {
 }
 
 int CompressedTexture2D::get_width() const {
-	return width;
+	return w;
 }
 
 int CompressedTexture2D::get_height() const {
-	return height;
+	return h;
 }
 
 RID CompressedTexture2D::get_rid() const {
@@ -212,21 +212,21 @@ RID CompressedTexture2D::get_rid() const {
 }
 
 void CompressedTexture2D::draw(RID p_canvas_item, const Point2 &p_pos, const Color &p_modulate, bool p_transpose) const {
-	if ((width | height) == 0) {
+	if ((w | h) == 0) {
 		return;
 	}
-	RenderingServer::get_singleton()->canvas_item_add_texture_rect(p_canvas_item, Rect2(p_pos, Size2(width, height)), texture, false, p_modulate, p_transpose);
+	RenderingServer::get_singleton()->canvas_item_add_texture_rect(p_canvas_item, Rect2(p_pos, Size2(w, h)), texture, false, p_modulate, p_transpose);
 }
 
 void CompressedTexture2D::draw_rect(RID p_canvas_item, const Rect2 &p_rect, bool p_tile, const Color &p_modulate, bool p_transpose) const {
-	if ((width | height) == 0) {
+	if ((w | h) == 0) {
 		return;
 	}
 	RenderingServer::get_singleton()->canvas_item_add_texture_rect(p_canvas_item, p_rect, texture, p_tile, p_modulate, p_transpose);
 }
 
 void CompressedTexture2D::draw_rect_region(RID p_canvas_item, const Rect2 &p_rect, const Rect2 &p_src_rect, const Color &p_modulate, bool p_transpose, bool p_clip_uv) const {
-	if ((width | height) == 0) {
+	if ((w | h) == 0) {
 		return;
 	}
 	RenderingServer::get_singleton()->canvas_item_add_texture_rect_region(p_canvas_item, p_rect, texture, p_src_rect, p_modulate, p_transpose, p_clip_uv);
@@ -266,8 +266,8 @@ bool CompressedTexture2D::is_pixel_opaque(int p_x, int p_y) const {
 			return true;
 		}
 
-		int x = p_x * aw / width;
-		int y = p_y * ah / height;
+		int x = p_x * aw / w;
+		int y = p_y * ah / h;
 
 		x = CLAMP(x, 0, aw);
 		y = CLAMP(y, 0, ah);
@@ -296,18 +296,18 @@ void CompressedTexture2D::reload_from_file() {
 void CompressedTexture2D::_validate_property(PropertyInfo &p_property) const {
 }
 
-Ref<Image> CompressedTexture2D::load_image_from_file(Ref<FileAccess> p_file, int p_size_limit) {
-	uint32_t data_format = p_file->get_32();
-	uint32_t width = p_file->get_16();
-	uint32_t height = p_file->get_16();
-	uint32_t mipmaps = p_file->get_32();
-	Image::Format format = Image::Format(p_file->get_32());
+Ref<Image> CompressedTexture2D::load_image_from_file(Ref<FileAccess> f, int p_size_limit) {
+	uint32_t data_format = f->get_32();
+	uint32_t w = f->get_16();
+	uint32_t h = f->get_16();
+	uint32_t mipmaps = f->get_32();
+	Image::Format format = Image::Format(f->get_32());
 
 	if (data_format == DATA_FORMAT_PNG || data_format == DATA_FORMAT_WEBP) {
 		//look for a PNG or WebP file inside
 
-		int source_width = width;
-		int source_height = height;
+		int sw = w;
+		int sh = h;
 
 		//mipmaps need to be read independently, they will be later combined
 		Vector<Ref<Image>> mipmap_images;
@@ -316,13 +316,13 @@ Ref<Image> CompressedTexture2D::load_image_from_file(Ref<FileAccess> p_file, int
 		bool first = true;
 
 		for (uint32_t i = 0; i < mipmaps + 1; i++) {
-			uint32_t size = p_file->get_32();
+			uint32_t size = f->get_32();
 
-			if (p_size_limit > 0 && i < (mipmaps - 1) && (source_width > p_size_limit || source_height > p_size_limit)) {
+			if (p_size_limit > 0 && i < (mipmaps - 1) && (sw > p_size_limit || sh > p_size_limit)) {
 				//can't load this due to size limit
-				source_width = MAX(source_width >> 1, 1);
-				source_height = MAX(source_height >> 1, 1);
-				p_file->seek(p_file->get_position() + size);
+				sw = MAX(sw >> 1, 1);
+				sh = MAX(sh >> 1, 1);
+				f->seek(f->get_position() + size);
 				continue;
 			}
 
@@ -330,7 +330,7 @@ Ref<Image> CompressedTexture2D::load_image_from_file(Ref<FileAccess> p_file, int
 			pv.resize(size);
 			{
 				uint8_t *wr = pv.ptrw();
-				p_file->get_buffer(wr, size);
+				f->get_buffer(wr, size);
 			}
 
 			Ref<Image> img;
@@ -357,8 +357,8 @@ Ref<Image> CompressedTexture2D::load_image_from_file(Ref<FileAccess> p_file, int
 
 			mipmap_images.push_back(img);
 
-			source_width = MAX(source_width >> 1, 1);
-			source_height = MAX(source_height >> 1, 1);
+			sw = MAX(sw >> 1, 1);
+			sh = MAX(sh >> 1, 1);
 		}
 
 		//print_line("mipmap read total: " + itos(mipmap_images.size()));
@@ -389,26 +389,26 @@ Ref<Image> CompressedTexture2D::load_image_from_file(Ref<FileAccess> p_file, int
 				}
 			}
 
-			image->set_data(width, height, true, mipmap_images[0]->get_format(), img_data);
+			image->set_data(w, h, true, mipmap_images[0]->get_format(), img_data);
 			return image;
 		}
 
 	} else if (data_format == DATA_FORMAT_BASIS_UNIVERSAL) {
-		int source_width = width;
-		int source_height = height;
-		uint32_t size = p_file->get_32();
-		if (p_size_limit > 0 && (source_width > p_size_limit || source_height > p_size_limit)) {
+		int sw = w;
+		int sh = h;
+		uint32_t size = f->get_32();
+		if (p_size_limit > 0 && (sw > p_size_limit || sh > p_size_limit)) {
 			//can't load this due to size limit
-			source_width = MAX(source_width >> 1, 1);
-			source_height = MAX(source_height >> 1, 1);
-			p_file->seek(p_file->get_position() + size);
+			sw = MAX(sw >> 1, 1);
+			sh = MAX(sh >> 1, 1);
+			f->seek(f->get_position() + size);
 			return Ref<Image>();
 		}
 		Vector<uint8_t> pv;
 		pv.resize(size);
 		{
 			uint8_t *wr = pv.ptrw();
-			p_file->get_buffer(wr, size);
+			f->get_buffer(wr, size);
 		}
 		Ref<Image> img;
 		img = Image::basis_universal_unpacker(pv);
@@ -416,19 +416,19 @@ Ref<Image> CompressedTexture2D::load_image_from_file(Ref<FileAccess> p_file, int
 			ERR_FAIL_COND_V(img.is_null() || img->is_empty(), Ref<Image>());
 		}
 		format = img->get_format();
-		source_width = MAX(source_width >> 1, 1);
-		source_height = MAX(source_height >> 1, 1);
+		sw = MAX(sw >> 1, 1);
+		sh = MAX(sh >> 1, 1);
 		return img;
 	} else if (data_format == DATA_FORMAT_IMAGE) {
-		int size = Image::get_image_data_size(width, height, format, mipmaps ? true : false);
+		int size = Image::get_image_data_size(w, h, format, mipmaps ? true : false);
 
 		for (uint32_t i = 0; i < mipmaps + 1; i++) {
 			int tw, th;
-			int ofs = Image::get_image_mipmap_offset_and_dimensions(width, height, format, i, tw, th);
+			int ofs = Image::get_image_mipmap_offset_and_dimensions(w, h, format, i, tw, th);
 
 			if (p_size_limit > 0 && i < mipmaps && (p_size_limit > tw || p_size_limit > th)) {
 				if (ofs) {
-					p_file->seek(p_file->get_position() + ofs);
+					f->seek(f->get_position() + ofs);
 				}
 				continue; //oops, size limit enforced, go to next
 			}
@@ -438,7 +438,7 @@ Ref<Image> CompressedTexture2D::load_image_from_file(Ref<FileAccess> p_file, int
 
 			{
 				uint8_t *wr = data.ptrw();
-				p_file->get_buffer(wr, data.size());
+				f->get_buffer(wr, data.size());
 			}
 
 			Ref<Image> image = Image::create_from_data(tw, th, mipmaps - i ? true : false, format, data);
@@ -508,35 +508,35 @@ Image::Format CompressedTexture3D::get_format() const {
 }
 
 Error CompressedTexture3D::_load_data(const String &p_path, Vector<Ref<Image>> &r_data, Image::Format &r_format, int &r_width, int &r_height, int &r_depth, bool &r_mipmaps) {
-	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
-	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, vformat("Unable to open file: %s.", p_path));
+	Ref<FileAccess> f = FileAccess::open(p_path, FileAccess::READ);
+	ERR_FAIL_COND_V_MSG(f.is_null(), ERR_CANT_OPEN, vformat("Unable to open file: %s.", p_path));
 
 	uint8_t header[4];
-	file->get_buffer(header, 4);
+	f->get_buffer(header, 4);
 	ERR_FAIL_COND_V(header[0] != 'G' || header[1] != 'S' || header[2] != 'T' || header[3] != 'L', ERR_FILE_UNRECOGNIZED);
 
 	//stored as compressed textures (used for lossless and lossy compression)
-	uint32_t version = file->get_32();
+	uint32_t version = f->get_32();
 
 	if (version > FORMAT_VERSION) {
 		ERR_FAIL_V_MSG(ERR_FILE_CORRUPT, "Compressed texture file is too new.");
 	}
 
-	r_depth = file->get_32(); //depth
-	file->get_32(); //ignored (mode)
-	file->get_32(); // ignored (data format)
+	r_depth = f->get_32(); //depth
+	f->get_32(); //ignored (mode)
+	f->get_32(); // ignored (data format)
 
-	file->get_32(); //ignored
-	int mipmap_count = file->get_32();
-	file->get_32(); //ignored
-	file->get_32(); //ignored
+	f->get_32(); //ignored
+	int mipmap_count = f->get_32();
+	f->get_32(); //ignored
+	f->get_32(); //ignored
 
 	r_mipmaps = mipmap_count != 0;
 
 	r_data.clear();
 
 	for (int i = 0; i < (r_depth + mipmap_count); i++) {
-		Ref<Image> image = CompressedTexture2D::load_image_from_file(file, 0);
+		Ref<Image> image = CompressedTexture2D::load_image_from_file(f, 0);
 		ERR_FAIL_COND_V(image.is_null() || image->is_empty(), ERR_CANT_OPEN);
 		if (i == 0) {
 			r_format = image->get_format();
@@ -568,9 +568,9 @@ Error CompressedTexture3D::load(const String &p_path) {
 		texture = RS::get_singleton()->texture_3d_create(tfmt, tw, th, td, tmm, data);
 	}
 
-	width = tw;
-	height = th;
-	depth = td;
+	w = tw;
+	h = th;
+	d = td;
 	mipmaps = tmm;
 	format = tfmt;
 
@@ -591,15 +591,15 @@ String CompressedTexture3D::get_load_path() const {
 }
 
 int CompressedTexture3D::get_width() const {
-	return width;
+	return w;
 }
 
 int CompressedTexture3D::get_height() const {
-	return height;
+	return h;
 }
 
 int CompressedTexture3D::get_depth() const {
-	return depth;
+	return d;
 }
 
 bool CompressedTexture3D::has_mipmaps() const {
@@ -699,31 +699,31 @@ Image::Format CompressedTextureLayered::get_format() const {
 Error CompressedTextureLayered::_load_data(const String &p_path, Vector<Ref<Image>> &images, int &mipmap_limit, int p_size_limit) {
 	ERR_FAIL_COND_V(images.size() != 0, ERR_INVALID_PARAMETER);
 
-	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
-	ERR_FAIL_COND_V_MSG(file.is_null(), ERR_CANT_OPEN, vformat("Unable to open file: %s.", p_path));
+	Ref<FileAccess> f = FileAccess::open(p_path, FileAccess::READ);
+	ERR_FAIL_COND_V_MSG(f.is_null(), ERR_CANT_OPEN, vformat("Unable to open file: %s.", p_path));
 
 	uint8_t header[4];
-	file->get_buffer(header, 4);
+	f->get_buffer(header, 4);
 	if (header[0] != 'G' || header[1] != 'S' || header[2] != 'T' || header[3] != 'L') {
 		ERR_FAIL_V_MSG(ERR_FILE_CORRUPT, "Compressed texture layered file is corrupt (Bad header).");
 	}
 
-	uint32_t version = file->get_32();
+	uint32_t version = f->get_32();
 
 	if (version > FORMAT_VERSION) {
 		ERR_FAIL_V_MSG(ERR_FILE_CORRUPT, "Compressed texture file is too new.");
 	}
 
-	uint32_t layer_count = file->get_32(); //layer count
-	uint32_t type = file->get_32(); //layer count
+	uint32_t layer_count = f->get_32(); //layer count
+	uint32_t type = f->get_32(); //layer count
 	ERR_FAIL_COND_V((int)type != layered_type, ERR_INVALID_DATA);
 
-	uint32_t df = file->get_32(); //data format
-	mipmap_limit = int(file->get_32());
+	uint32_t df = f->get_32(); //data format
+	mipmap_limit = int(f->get_32());
 	//reserved
-	file->get_32();
-	file->get_32();
-	file->get_32();
+	f->get_32();
+	f->get_32();
+	f->get_32();
 
 	if (!(df & FORMAT_BIT_STREAM)) {
 		p_size_limit = 0;
@@ -732,7 +732,7 @@ Error CompressedTextureLayered::_load_data(const String &p_path, Vector<Ref<Imag
 	images.resize(layer_count);
 
 	for (uint32_t i = 0; i < layer_count; i++) {
-		Ref<Image> image = CompressedTexture2D::load_image_from_file(file, p_size_limit);
+		Ref<Image> image = CompressedTexture2D::load_image_from_file(f, p_size_limit);
 		ERR_FAIL_COND_V(image.is_null() || image->is_empty(), ERR_CANT_OPEN);
 		images.write[i] = image;
 	}
@@ -757,8 +757,8 @@ Error CompressedTextureLayered::load(const String &p_path) {
 		texture = RS::get_singleton()->texture_2d_layered_create(images, RS::TextureLayeredType(layered_type));
 	}
 
-	width = images[0]->get_width();
-	height = images[0]->get_height();
+	w = images[0]->get_width();
+	h = images[0]->get_height();
 	mipmaps = images[0]->has_mipmaps();
 	format = images[0]->get_format();
 	layers = images.size();
@@ -780,11 +780,11 @@ String CompressedTextureLayered::get_load_path() const {
 }
 
 int CompressedTextureLayered::get_width() const {
-	return width;
+	return w;
 }
 
 int CompressedTextureLayered::get_height() const {
-	return height;
+	return h;
 }
 
 int CompressedTextureLayered::get_layers() const {
