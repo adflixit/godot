@@ -43,6 +43,7 @@
 #include "core/config/engine.h"
 #include "core/core_constants.h"
 #include "core/io/file_access.h"
+#include "core/math/expression.h"
 
 #ifdef TOOLS_ENABLED
 #include "core/config/project_settings.h"
@@ -427,7 +428,30 @@ void GDScriptLanguage::debug_get_globals(List<String> *p_globals, List<Variant> 
 }
 
 String GDScriptLanguage::debug_parse_stack_level_expression(int p_level, const String &p_expression, int p_max_subitems, int p_max_depth) {
-	return "";
+	List<String> names;
+	List<Variant> values;
+	debug_get_stack_level_locals(p_level, &names, &values, p_max_subitems, p_max_depth);
+
+	Vector<String> name_vector;
+	for (const String &name : names) {
+		name_vector.push_back(name);
+	}
+
+	Array value_array;
+	for (const Variant &value : values) {
+		value_array.push_back(value);
+	}
+
+	Expression expression;
+	if (expression.parse(p_expression, name_vector) == OK) {
+		ScriptInstance *instance = debug_get_stack_level_instance(p_level);
+		if (instance) {
+			Variant return_val = expression.execute(value_array, instance->get_owner());
+			return return_val.get_construct_string();
+		}
+	}
+
+	return String();
 }
 
 void GDScriptLanguage::get_recognized_extensions(List<String> *p_extensions) const {
@@ -3164,7 +3188,9 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
 	HashMap<String, ScriptLanguage::CodeCompletionOption> options;
 
 	GDScriptParser::CompletionContext completion_context = parser.get_completion_context();
-	completion_context.base = p_owner;
+	if (completion_context.current_class != nullptr && completion_context.current_class->outer == nullptr) {
+		completion_context.base = p_owner;
+	}
 	bool is_function = false;
 
 	switch (completion_context.type) {
@@ -3534,13 +3560,13 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
 	return OK;
 }
 
-#else
+#else // !TOOLS_ENABLED
 
 Error GDScriptLanguage::complete_code(const String &p_code, const String &p_path, Object *p_owner, List<ScriptLanguage::CodeCompletionOption> *r_options, bool &r_forced, String &r_call_hint) {
 	return OK;
 }
 
-#endif
+#endif // TOOLS_ENABLED
 
 //////// END COMPLETION //////////
 
@@ -4125,4 +4151,4 @@ static Error _lookup_symbol_from_base(const GDScriptParser::DataType &p_base, co
 	return ERR_CANT_RESOLVE;
 }
 
-#endif
+#endif // TOOLS_ENABLED
