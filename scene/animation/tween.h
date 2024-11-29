@@ -31,7 +31,7 @@
 #ifndef TWEEN_H
 #define TWEEN_H
 
-#include "scene/animation/easing.h"
+#include "scene/resources/easing.h"
 
 class Tween;
 class Node;

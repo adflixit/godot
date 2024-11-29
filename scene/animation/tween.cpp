@@ -32,7 +32,6 @@
 
 #include "scene/main/node.h"
 #include "scene/resources/animation.h"
-#include "scene/animation/cubic_bezier_easing.h"
 
 #define CHECK_VALID()                                                                                      \
 	ERR_FAIL_COND_V_MSG(!valid, nullptr, "Tween invalid. Either finished or created outside scene tree."); \
@@ -58,7 +57,8 @@ void Tweener::_bind_methods() {
 Ref<Easing> Tween::default_easing;
 
 void Tween::init_static() {
-	Ref<CubicBezierEasing> ref = CubicBezierEasing::create(0.0, 0.0, 1.0, 1.0);
+	Ref<LinearEasing> ref;
+	ref.instantiate();
 	default_easing = ref;
 }
 
