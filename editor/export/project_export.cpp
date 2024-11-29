@@ -1206,6 +1206,9 @@ void ProjectExportDialog::_export_pck_zip_selected(const String &p_path) {
 	bool export_debug = fd_option.get(TTR("Export With Debug"), true);
 	bool export_as_patch = fd_option.get(TTR("Export As Patch"), true);
 
+	EditorSettings::get_singleton()->set_project_metadata("export_options", "export_debug", export_debug);
+	EditorSettings::get_singleton()->set_project_metadata("export_options", "export_as_patch", export_as_patch);
+
 	if (p_path.ends_with(".zip")) {
 		if (export_as_patch) {
 			platform->export_zip_patch(current, export_debug, p_path);
@@ -1304,6 +1307,8 @@ void ProjectExportDialog::_export_project_to_path(const String &p_path) {
 	current->update_value_overrides();
 	Dictionary fd_option = export_project->get_selected_options();
 	bool export_debug = fd_option.get(TTR("Export With Debug"), true);
+
+	EditorSettings::get_singleton()->set_project_metadata("export_options", "export_debug", export_debug);
 
 	Error err = platform->export_project(current, export_debug, current->get_export_path(), 0);
 	result_dialog_log->clear();
@@ -1411,6 +1416,7 @@ ProjectExportDialog::ProjectExportDialog() {
 	preset_vb->add_child(mc);
 	mc->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	presets = memnew(ItemList);
+	presets->set_theme_type_variation("ItemListSecondary");
 	presets->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED);
 	SET_DRAG_FORWARDING_GCD(presets, ProjectExportDialog);
 	mc->add_child(presets);
@@ -1774,9 +1780,9 @@ ProjectExportDialog::ProjectExportDialog() {
 	export_project->connect("file_selected", callable_mp(this, &ProjectExportDialog::_export_project_to_path));
 	export_project->get_line_edit()->connect(SceneStringName(text_changed), callable_mp(this, &ProjectExportDialog::_validate_export_path));
 
-	export_project->add_option(TTR("Export With Debug"), Vector<String>(), true);
-	export_pck_zip->add_option(TTR("Export With Debug"), Vector<String>(), true);
-	export_pck_zip->add_option(TTR("Export As Patch"), Vector<String>(), true);
+	export_project->add_option(TTR("Export With Debug"), Vector<String>(), EditorSettings::get_singleton()->get_project_metadata("export_options", "export_debug", true));
+	export_pck_zip->add_option(TTR("Export With Debug"), Vector<String>(), EditorSettings::get_singleton()->get_project_metadata("export_options", "export_debug", true));
+	export_pck_zip->add_option(TTR("Export As Patch"), Vector<String>(), EditorSettings::get_singleton()->get_project_metadata("export_options", "export_as_patch", true));
 
 	set_hide_on_ok(false);
 

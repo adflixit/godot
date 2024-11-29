@@ -2617,7 +2617,7 @@ Error Image::load(const String &p_path) {
 		WARN_PRINT(vformat("Loaded resource as image file, this will not work on export: '%s'. Instead, import the image file as an Image resource and load it normally as a resource.", path));
 	}
 #endif
-	return ImageLoader::load_image(ResourceUID::ensure_path(p_path), this);
+	return ImageLoader::load_image(path, this);
 }
 
 Ref<Image> Image::load_from_file(const String &p_path) {
@@ -2788,8 +2788,7 @@ Error Image::compress_from_channels(CompressMode p_mode, UsedChannels p_channels
 			} break;
 
 			case COMPRESS_S3TC: {
-				// BC3 is unsupported currently.
-				if ((p_channels == USED_CHANNELS_R || p_channels == USED_CHANNELS_RGB || p_channels == USED_CHANNELS_L) && _image_compress_bc_rd_func) {
+				if (_image_compress_bc_rd_func) {
 					Error result = _image_compress_bc_rd_func(this, p_channels);
 
 					// If the image was compressed successfully, we return here. If not, we fall back to the default compression scheme.

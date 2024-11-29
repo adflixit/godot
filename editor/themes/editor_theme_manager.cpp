@@ -1901,6 +1901,12 @@ void EditorThemeManager::_populate_editor_styles(const Ref<EditorTheme> &p_theme
 		p_theme->set_stylebox(SceneStringName(pressed), "BottomPanelButton", menu_transparent_style);
 		p_theme->set_stylebox("hover_pressed", "BottomPanelButton", main_screen_button_hover);
 		p_theme->set_stylebox("hover", "BottomPanelButton", main_screen_button_hover);
+		// Don't tint the icon even when in "pressed" state.
+		p_theme->set_color("icon_pressed_color", "BottomPanelButton", Color(1, 1, 1, 1));
+		Color icon_hover_color = p_config.icon_normal_color * (p_config.dark_theme ? 1.15 : 1.0);
+		icon_hover_color.a = 1.0;
+		p_theme->set_color("icon_hover_color", "BottomPanelButton", icon_hover_color);
+		p_theme->set_color("icon_hover_pressed_color", "BottomPanelButton", icon_hover_color);
 	}
 
 	// Editor GUI widgets.
@@ -1998,6 +2004,7 @@ void EditorThemeManager::_populate_editor_styles(const Ref<EditorTheme> &p_theme
 			Color icon_hover_color = p_config.icon_normal_color * (p_config.dark_theme ? 1.15 : 1.0);
 			icon_hover_color.a = 1.0;
 			p_theme->set_color("icon_hover_color", "EditorLogFilterButton", icon_hover_color);
+			p_theme->set_color("icon_hover_pressed_color", "EditorLogFilterButton", icon_hover_color);
 
 			// When pressed, add a small bottom border to the buttons to better show their active state,
 			// similar to active tabs.
@@ -2132,6 +2139,10 @@ void EditorThemeManager::_populate_editor_styles(const Ref<EditorTheme> &p_theme
 
 		// EditorValidationPanel.
 		p_theme->set_stylebox(SceneStringName(panel), "EditorValidationPanel", p_config.tree_panel_style);
+
+		// Secondary trees and item lists.
+		p_theme->set_type_variation("TreeSecondary", "Tree");
+		p_theme->set_type_variation("ItemListSecondary", "ItemList");
 	}
 
 	// Editor inspector.
@@ -2506,6 +2517,7 @@ void EditorThemeManager::_populate_editor_styles(const Ref<EditorTheme> &p_theme
 			p_theme->set_color("transition_icon_disabled_color", "GraphStateMachine", Color(1, 1, 1, 0.2));
 			p_theme->set_color("highlight_color", "GraphStateMachine", p_config.accent_color);
 			p_theme->set_color("highlight_disabled_color", "GraphStateMachine", p_config.accent_color * Color(1, 1, 1, 0.6));
+			p_theme->set_color("focus_color", "GraphStateMachine", p_config.accent_color);
 			p_theme->set_color("guideline_color", "GraphStateMachine", p_config.font_color * Color(1, 1, 1, 0.3));
 
 			p_theme->set_color("playback_color", "GraphStateMachine", p_config.font_color);

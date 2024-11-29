@@ -682,8 +682,9 @@ void Viewport::_process_picking() {
 	if (Object::cast_to<Window>(this) && Input::get_singleton()->get_mouse_mode() == Input::MOUSE_MODE_CAPTURED) {
 		return;
 	}
-	if (!gui.mouse_in_viewport) {
-		// Clear picking events if mouse has left viewport.
+	if (!gui.mouse_in_viewport || gui.subwindow_over) {
+		// Clear picking events if the mouse has left the viewport or is over an embedded window.
+		// These are locations, that are expected to not trigger physics picking.
 		physics_picking_events.clear();
 		return;
 	}
@@ -1252,6 +1253,10 @@ void Viewport::_propagate_drag_notification(Node *p_node, int p_what) {
 Ref<World2D> Viewport::get_world_2d() const {
 	ERR_READ_THREAD_GUARD_V(Ref<World2D>());
 	return world_2d;
+}
+
+Transform2D Viewport::get_stretch_transform() const {
+	return stretch_transform;
 }
 
 Transform2D Viewport::get_final_transform() const {
@@ -1931,21 +1936,19 @@ void Viewport::_gui_input_event(Ref<InputEvent> p_event) {
 					}
 				}
 
-				// If the tooltip timer isn't running, start it.
-				// Otherwise, only reset the timer if the mouse has moved more than 5 pixels.
-				if (!is_tooltip_shown && over->can_process() &&
-						(gui.tooltip_timer.is_null() ||
-								Math::is_zero_approx(gui.tooltip_timer->get_time_left()) ||
-								mm->get_relative().length() > 5.0)) {
-					if (gui.tooltip_timer.is_valid()) {
-						gui.tooltip_timer->release_connections();
-						gui.tooltip_timer = Ref<SceneTreeTimer>();
+				// Reset the timer if the mouse has moved more than 5 pixels or has entered a new control.
+				if (!is_tooltip_shown && over->can_process()) {
+					Vector2 new_tooltip_pos = over->get_screen_transform().xform(pos);
+					if (over != gui.tooltip_control || gui.tooltip_pos.distance_squared_to(new_tooltip_pos) > 25) {
+						if (gui.tooltip_timer.is_valid()) {
+							gui.tooltip_timer->release_connections();
+						}
+						gui.tooltip_control = over;
+						gui.tooltip_pos = new_tooltip_pos;
+						gui.tooltip_timer = get_tree()->create_timer(gui.tooltip_delay);
+						gui.tooltip_timer->set_ignore_time_scale(true);
+						gui.tooltip_timer->connect("timeout", callable_mp(this, &Viewport::_gui_show_tooltip));
 					}
-					gui.tooltip_control = over;
-					gui.tooltip_pos = over->get_screen_transform().xform(pos);
-					gui.tooltip_timer = get_tree()->create_timer(gui.tooltip_delay);
-					gui.tooltip_timer->set_ignore_time_scale(true);
-					gui.tooltip_timer->connect("timeout", callable_mp(this, &Viewport::_gui_show_tooltip));
 				}
 			}
 
@@ -3061,6 +3064,14 @@ void Viewport::_update_mouse_over(Vector2 p_pos) {
 				v->notification(NOTIFICATION_VP_MOUSE_ENTER);
 			}
 			v->_update_mouse_over(v->get_final_transform().affine_inverse().xform(pos));
+		}
+
+		Viewport *section_root = get_section_root_viewport();
+		if (section_root && c->is_consume_drag_and_drop_enabled()) {
+			// Evaluating `consume_drag_and_drop` and adjusting target_control needs to happen
+			// after `_update_mouse_over` in the SubViewports, because otherwise physics picking
+			// would not work inside SubViewports.
+			section_root->gui.target_control = over;
 		}
 	}
 }
@@ -4630,6 +4641,7 @@ void Viewport::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_global_canvas_transform", "xform"), &Viewport::set_global_canvas_transform);
 	ClassDB::bind_method(D_METHOD("get_global_canvas_transform"), &Viewport::get_global_canvas_transform);
+	ClassDB::bind_method(D_METHOD("get_stretch_transform"), &Viewport::get_stretch_transform);
 	ClassDB::bind_method(D_METHOD("get_final_transform"), &Viewport::get_final_transform);
 	ClassDB::bind_method(D_METHOD("get_screen_transform"), &Viewport::get_screen_transform);
 

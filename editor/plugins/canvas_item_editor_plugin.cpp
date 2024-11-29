@@ -1995,15 +1995,14 @@ bool CanvasItemEditor::_gui_input_scale(const Ref<InputEvent> &p_event) {
 				}
 			}
 
+			Transform2D edit_transform;
+			bool using_temp_pivot = !Math::is_inf(temp_pivot.x) || !Math::is_inf(temp_pivot.y);
+			if (using_temp_pivot) {
+				edit_transform = Transform2D(drag_selection.front()->get()->_edit_get_rotation(), temp_pivot);
+			} else {
+				edit_transform = drag_selection.front()->get()->_edit_get_transform();
+			}
 			for (CanvasItem *ci : drag_selection) {
-				Transform2D edit_transform;
-				bool using_temp_pivot = !Math::is_inf(temp_pivot.x) || !Math::is_inf(temp_pivot.y);
-				if (using_temp_pivot) {
-					edit_transform = Transform2D(ci->_edit_get_rotation(), temp_pivot);
-				} else {
-					edit_transform = ci->_edit_get_transform();
-				}
-
 				Transform2D parent_xform = ci->get_global_transform_with_canvas() * ci->get_transform().affine_inverse();
 				Transform2D unscaled_transform = (transform * parent_xform * edit_transform).orthonormalized();
 				Transform2D simple_xform = (viewport->get_transform() * unscaled_transform).affine_inverse() * transform;
@@ -3612,7 +3611,7 @@ void CanvasItemEditor::_draw_selection() {
 
 	// Remove non-movable nodes.
 	for (CanvasItem *ci : selection) {
-		if (!_is_node_movable(ci, true)) {
+		if (!_is_node_movable(ci)) {
 			selection.erase(ci);
 		}
 	}
@@ -3913,7 +3912,7 @@ void CanvasItemEditor::_draw_message() {
 
 	Ref<Font> font = get_theme_font(SceneStringName(font), SNAME("Label"));
 	int font_size = get_theme_font_size(SceneStringName(font_size), SNAME("Label"));
-	Point2 msgpos = Point2(RULER_WIDTH + 5 * EDSCALE, viewport->get_size().y - 20 * EDSCALE);
+	Point2 msgpos = Point2(RULER_WIDTH + 10 * EDSCALE, viewport->get_size().y - 14 * EDSCALE);
 	viewport->draw_string(font, msgpos + Point2(1, 1), message, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(0, 0, 0, 0.8));
 	viewport->draw_string(font, msgpos + Point2(-1, -1), message, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(0, 0, 0, 0.8));
 	viewport->draw_string(font, msgpos, message, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1, 1, 1, 1));
@@ -4422,6 +4421,14 @@ void CanvasItemEditor::_insert_animation_keys(bool p_location, bool p_rotation, 
 		}
 	}
 	te->commit_insert_queue();
+}
+
+void CanvasItemEditor::_prepare_view_menu() {
+	PopupMenu *popup = view_menu->get_popup();
+
+	Node *root = EditorNode::get_singleton()->get_edited_scene();
+	bool has_guides = root && (root->has_meta("_edit_horizontal_guides_") || root->has_meta("_edit_vertical_guides_"));
+	popup->set_item_disabled(popup->get_item_index(CLEAR_GUIDES), !has_guides);
 }
 
 void CanvasItemEditor::_popup_callback(int p_op) {
@@ -5537,9 +5544,10 @@ CanvasItemEditor::CanvasItemEditor() {
 	view_menu->set_switch_on_hover(true);
 	view_menu->set_shortcut_context(this);
 	main_menu_hbox->add_child(view_menu);
-	view_menu->get_popup()->connect(SceneStringName(id_pressed), callable_mp(this, &CanvasItemEditor::_popup_callback));
 
 	p = view_menu->get_popup();
+	p->connect(SceneStringName(id_pressed), callable_mp(this, &CanvasItemEditor::_popup_callback));
+	p->connect("about_to_popup", callable_mp(this, &CanvasItemEditor::_prepare_view_menu));
 	p->set_hide_on_checkable_item_selection(false);
 
 	grid_menu = memnew(PopupMenu);

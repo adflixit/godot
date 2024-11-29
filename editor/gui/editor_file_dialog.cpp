@@ -156,7 +156,7 @@ void EditorFileDialog::popup_file_dialog() {
 }
 
 void EditorFileDialog::_focus_file_text() {
-	int lp = file->get_text().rfind(".");
+	int lp = file->get_text().rfind_char('.');
 	if (lp != -1) {
 		file->select(0, lp);
 		file->grab_focus();
@@ -1263,7 +1263,7 @@ void EditorFileDialog::set_current_path(const String &p_path) {
 	if (!p_path.size()) {
 		return;
 	}
-	int pos = MAX(p_path.rfind("/"), p_path.rfind("\\"));
+	int pos = MAX(p_path.rfind_char('/'), p_path.rfind_char('\\'));
 	if (pos == -1) {
 		set_current_file(p_path);
 	} else {
@@ -2317,6 +2317,7 @@ EditorFileDialog::EditorFileDialog() {
 	favorites->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED);
 	fav_vb->add_child(favorites);
 	favorites->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+	favorites->set_theme_type_variation("ItemListSecondary");
 	favorites->connect(SceneStringName(item_selected), callable_mp(this, &EditorFileDialog::_favorite_selected));
 
 	VBoxContainer *rec_vb = memnew(VBoxContainer);
@@ -2326,6 +2327,7 @@ EditorFileDialog::EditorFileDialog() {
 	recent = memnew(ItemList);
 	recent->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED);
 	recent->set_allow_reselect(true);
+	recent->set_theme_type_variation("ItemListSecondary");
 	rec_vb->add_margin_child(TTR("Recent:"), recent, true);
 	recent->connect(SceneStringName(item_selected), callable_mp(this, &EditorFileDialog::_recent_selected));
 

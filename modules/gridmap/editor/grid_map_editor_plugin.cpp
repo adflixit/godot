@@ -1233,6 +1233,8 @@ void GridMapEditor::_update_cursor_instance() {
 			Ref<Mesh> mesh = node->get_mesh_library()->get_item_mesh(selected_palette);
 			if (!mesh.is_null() && mesh->get_rid().is_valid()) {
 				cursor_instance = RenderingServer::get_singleton()->instance_create2(mesh->get_rid(), get_tree()->get_root()->get_world_3d()->get_scenario());
+				RS::ShadowCastingSetting cast_shadows = (RS::ShadowCastingSetting)node->get_mesh_library()->get_item_mesh_cast_shadow(selected_palette);
+				RS::get_singleton()->instance_geometry_set_cast_shadows_setting(cursor_instance, cast_shadows);
 			}
 		}
 	} else if (mode_buttons_group->get_pressed_button() == select_mode_button) {
@@ -1351,7 +1353,6 @@ GridMapEditor::GridMapEditor() {
 			callable_mp(this, &GridMapEditor::_on_tool_mode_changed).unbind(1));
 	mode_buttons->add_child(select_mode_button);
 	viewport_shortcut_buttons.push_back(select_mode_button);
-	select_mode_button->set_pressed(true);
 
 	erase_mode_button = memnew(Button);
 	erase_mode_button->set_theme_type_variation("FlatButton");
@@ -1724,6 +1725,10 @@ bool GridMapEditorPlugin::handles(Object *p_object) const {
 
 void GridMapEditorPlugin::make_visible(bool p_visible) {
 	if (p_visible) {
+		BaseButton *button = grid_map_editor->mode_buttons_group->get_pressed_button();
+		if (button == nullptr) {
+			grid_map_editor->select_mode_button->set_pressed(true);
+		}
 		grid_map_editor->_on_tool_mode_changed();
 		panel_button->show();
 		EditorNode::get_bottom_panel()->make_item_visible(grid_map_editor);
