@@ -41,6 +41,11 @@ void Tweener::set_tween(const Ref<Tween> &p_tween) {
 	tween_id = p_tween->get_instance_id();
 }
 
+void Tweener::start() {
+	elapsed_time = 0;
+	finished = false;
+}
+
 Ref<Tween> Tweener::_get_tween() {
 	return Ref<Tween>(ObjectDB::get_instance(tween_id));
 }
@@ -123,7 +128,8 @@ Ref<PropertyTweener> Tween::tween_property(const Object *p_target, const NodePat
 		return nullptr;
 	}
 
-	Ref<PropertyTweener> tweener = memnew(PropertyTweener(p_target, property_subnames, p_to, p_duration));
+	Ref<PropertyTweener> tweener;
+	tweener.instantiate(p_target, property_subnames, p_to, p_duration);
 	append(tweener);
 	return tweener;
 }
@@ -131,7 +137,8 @@ Ref<PropertyTweener> Tween::tween_property(const Object *p_target, const NodePat
 Ref<IntervalTweener> Tween::tween_interval(double p_time) {
 	CHECK_VALID();
 
-	Ref<IntervalTweener> tweener = memnew(IntervalTweener(p_time));
+	Ref<IntervalTweener> tweener;
+	tweener.instantiate(p_time);
 	append(tweener);
 	return tweener;
 }
@@ -139,7 +146,8 @@ Ref<IntervalTweener> Tween::tween_interval(double p_time) {
 Ref<CallbackTweener> Tween::tween_callback(const Callable &p_callback) {
 	CHECK_VALID();
 
-	Ref<CallbackTweener> tweener = memnew(CallbackTweener(p_callback));
+	Ref<CallbackTweener> tweener;
+	tweener.instantiate(p_callback);
 	append(tweener);
 	return tweener;
 }
@@ -151,7 +159,27 @@ Ref<MethodTweener> Tween::tween_method(const Callable &p_callback, const Variant
 		return nullptr;
 	}
 
-	Ref<MethodTweener> tweener = memnew(MethodTweener(p_callback, p_from, p_to, p_duration));
+	Ref<MethodTweener> tweener;
+	tweener.instantiate(p_callback, p_from, p_to, p_duration);
+	append(tweener);
+	return tweener;
+}
+
+Ref<SubtweenTweener> Tween::tween_subtween(const Ref<Tween> &p_subtween) {
+	CHECK_VALID();
+
+	// Ensure that the subtween being added is not null.
+	ERR_FAIL_COND_V(p_subtween.is_null(), nullptr);
+
+	Ref<SubtweenTweener> tweener;
+	tweener.instantiate(p_subtween);
+
+	// Remove the tween from its parent tree, if it has one.
+	// If the user created this tween without a parent tree attached,
+	// then this step isn't necessary.
+	if (tweener->subtween->parent_tree != nullptr) {
+		tweener->subtween->parent_tree->remove_tween(tweener->subtween);
+	}
 	append(tweener);
 	return tweener;
 }
@@ -217,7 +245,7 @@ Ref<Tween> Tween::set_process_mode(TweenProcessMode p_mode) {
 	return this;
 }
 
-Tween::TweenProcessMode Tween::get_process_mode() {
+Tween::TweenProcessMode Tween::get_process_mode() const {
 	return process_mode;
 }
 
@@ -226,8 +254,17 @@ Ref<Tween> Tween::set_pause_mode(TweenPauseMode p_mode) {
 	return this;
 }
 
-Tween::TweenPauseMode Tween::get_pause_mode() {
+Tween::TweenPauseMode Tween::get_pause_mode() const {
 	return pause_mode;
+}
+
+Ref<Tween> Tween::set_ignore_time_scale(bool p_ignore) {
+	ignore_time_scale = p_ignore;
+	return this;
+}
+
+bool Tween::is_ignoring_time_scale() const {
+	return ignore_time_scale;
 }
 
 Ref<Tween> Tween::set_loops(int p_loops) {
@@ -425,6 +462,7 @@ void Tween::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("interval", "time"), &Tween::tween_interval);
 	ClassDB::bind_method(D_METHOD("callback", "callback"), &Tween::tween_callback);
 	ClassDB::bind_method(D_METHOD("method", "method", "from", "to", "duration"), &Tween::tween_method);
+	ClassDB::bind_method(D_METHOD("subtween", "subtween"), &Tween::tween_subtween);
 
 	ClassDB::bind_method(D_METHOD("custom_step", "delta"), &Tween::custom_step);
 	ClassDB::bind_method(D_METHOD("stop"), &Tween::stop);
@@ -438,6 +476,7 @@ void Tween::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("bind_node", "node"), &Tween::bind_node);
 	ClassDB::bind_method(D_METHOD("set_process_mode", "mode"), &Tween::set_process_mode);
 	ClassDB::bind_method(D_METHOD("set_pause_mode", "mode"), &Tween::set_pause_mode);
+	ClassDB::bind_method(D_METHOD("set_ignore_time_scale", "ignore"), &Tween::set_ignore_time_scale, DEFVAL(true));
 
 	ClassDB::bind_method(D_METHOD("loop", "loops"), &Tween::set_loops, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_loops_left"), &Tween::get_loops_left);
@@ -467,8 +506,9 @@ Tween::Tween() {
 	ERR_FAIL_MSG("Tween can't be created directly. Use create_tween() method.");
 }
 
-Tween::Tween(bool p_valid) {
-	valid = p_valid;
+Tween::Tween(SceneTree *p_parent_tree) {
+	parent_tree = p_parent_tree;
+	valid = true;
 }
 
 Ref<PropertyTweener> PropertyTweener::from(const Variant &p_value) {
@@ -506,8 +546,7 @@ Ref<PropertyTweener> PropertyTweener::set_delay(double p_delay) {
 }
 
 void PropertyTweener::start() {
-	elapsed_time = 0;
-	finished = false;
+	Tweener::start();
 
 	Object *target_instance = ObjectDB::get_instance(target);
 	if (!target_instance) {
@@ -609,11 +648,6 @@ PropertyTweener::PropertyTweener() {
 	ERR_FAIL_MSG("PropertyTweener can't be created directly. Use the tween_property() method in Tween.");
 }
 
-void IntervalTweener::start() {
-	elapsed_time = 0;
-	finished = false;
-}
-
 bool IntervalTweener::step(double &r_delta) {
 	if (finished) {
 		return false;
@@ -642,11 +676,6 @@ IntervalTweener::IntervalTweener() {
 Ref<CallbackTweener> CallbackTweener::set_delay(double p_delay) {
 	delay = p_delay;
 	return this;
-}
-
-void CallbackTweener::start() {
-	elapsed_time = 0;
-	finished = false;
 }
 
 bool CallbackTweener::step(double &r_delta) {
@@ -702,11 +731,6 @@ Ref<MethodTweener> MethodTweener::set_delay(double p_delay) {
 Ref<MethodTweener> MethodTweener::set_easing(Ref<Easing> p_easing) {
 	easing = p_easing;
 	return this;
-}
-
-void MethodTweener::start() {
-	elapsed_time = 0;
-	finished = false;
 }
 
 bool MethodTweener::step(double &r_delta) {
@@ -784,4 +808,51 @@ MethodTweener::MethodTweener(const Callable &p_callback, const Variant &p_from, 
 
 MethodTweener::MethodTweener() {
 	ERR_FAIL_MSG("MethodTweener can't be created directly. Use the tween_method() method in Tween.");
+}
+
+void SubtweenTweener::start() {
+	Tweener::start();
+
+	// Reset the subtween.
+	subtween->stop();
+	subtween->play();
+}
+
+bool SubtweenTweener::step(double &r_delta) {
+	if (finished) {
+		return false;
+	}
+
+	elapsed_time += r_delta;
+
+	if (elapsed_time < delay) {
+		r_delta = 0;
+		return true;
+	}
+
+	if (!subtween->step(r_delta)) {
+		r_delta = elapsed_time - delay - subtween->get_total_time();
+		_finish();
+		return false;
+	}
+
+	r_delta = 0;
+	return true;
+}
+
+Ref<SubtweenTweener> SubtweenTweener::set_delay(double p_delay) {
+	delay = p_delay;
+	return this;
+}
+
+void SubtweenTweener::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_delay", "delay"), &SubtweenTweener::set_delay);
+}
+
+SubtweenTweener::SubtweenTweener(const Ref<Tween> &p_subtween) {
+	subtween = p_subtween;
+}
+
+SubtweenTweener::SubtweenTweener() {
+	ERR_FAIL_MSG("SubtweenTweener can't be created directly. Use the tween_subtween() method in Tween.");
 }
