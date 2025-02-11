@@ -134,19 +134,9 @@ Error GDML::_get_indent(const char32_t *p_str, int &index, int p_len, int &r_ind
 	return ERR_PARSE_ERROR;
 }
 
-TK_IDENTIFIER,
-TK_CONSTRUCT,
-TK_STRING,
-TK_STRING_NAME,
-TK_NUMBER,
-TK_COLON,
-TK_COMMA,
-TK_EQUAL,
-TK_NEWLINE,
-TK_EOF,
-TK_MAX
-
 Error GDML::_get_token(const char32_t *p_str, int &index, int p_len, Token &r_token, int &line, String &r_err_str) {
+	bool string_name = false;
+
 	while (p_len > 0) {
 		switch (p_str[index]) {
 			case ':': {
@@ -335,24 +325,104 @@ Error GDML::_get_token(const char32_t *p_str, int &index, int p_len, Token &r_to
 
 			} break;
 			default: {
-				if (p_str[index] <= 32) {
-					index++;
+				if (cchar <= 32) {
 					break;
 				}
 
-				if (is_ascii_alphabet_char(p_str[index]) || is_underscore(p_str[index]) || is_digit(p_str[index])) {
-					String id;
+				if (cchar == '-' || (cchar >= '0' && cchar <= '9')) {
+					//a number
 
-					while (is_ascii_alphabet_char(p_str[index]) || is_underscore(p_str[index]) || is_digit(p_str[index])) {
-						id += p_str[index];
-						index++;
+					StringBuffer<> num;
+#define READING_SIGN 0
+#define READING_INT 1
+#define READING_DEC 2
+#define READING_EXP 3
+#define READING_DONE 4
+					int reading = READING_INT;
+
+					if (cchar == '-') {
+						num += '-';
+						cchar = p_stream->get_char();
 					}
 
+					char32_t c = cchar;
+					bool exp_sign = false;
+					bool exp_beg = false;
+					bool is_float = false;
+
+					while (true) {
+						switch (reading) {
+							case READING_INT: {
+								if (is_digit(c)) {
+									//pass
+								} else if (c == '.') {
+									reading = READING_DEC;
+									is_float = true;
+								} else if (c == 'e') {
+									reading = READING_EXP;
+									is_float = true;
+								} else {
+									reading = READING_DONE;
+								}
+
+							} break;
+							case READING_DEC: {
+								if (is_digit(c)) {
+								} else if (c == 'e') {
+									reading = READING_EXP;
+								} else {
+									reading = READING_DONE;
+								}
+
+							} break;
+							case READING_EXP: {
+								if (is_digit(c)) {
+									exp_beg = true;
+
+								} else if ((c == '-' || c == '+') && !exp_sign && !exp_beg) {
+									exp_sign = true;
+
+								} else {
+									reading = READING_DONE;
+								}
+							} break;
+						}
+
+						if (reading == READING_DONE) {
+							break;
+						}
+						num += c;
+						c = p_stream->get_char();
+					}
+
+					p_stream->saved = c;
+
+					r_token.type = TK_NUMBER;
+
+					if (is_float) {
+						r_token.value = num.as_double();
+					} else {
+						r_token.value = num.as_int();
+					}
+					return OK;
+				} else if (is_ascii_alphabet_char(cchar) || is_underscore(cchar)) {
+					StringBuffer<> id;
+					bool first = true;
+
+					while (is_ascii_alphabet_char(cchar) || is_underscore(cchar) || (!first && is_digit(cchar))) {
+						id += cchar;
+						cchar = p_stream->get_char();
+						first = false;
+					}
+
+					p_stream->saved = cchar;
+
 					r_token.type = TK_IDENTIFIER;
-					r_token.value = id;
+					r_token.value = id.as_string();
 					return OK;
 				} else {
 					r_err_str = "Unexpected character.";
+					r_token.type = TK_ERROR;
 					return ERR_PARSE_ERROR;
 				}
 			}
