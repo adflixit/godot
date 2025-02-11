@@ -394,7 +394,7 @@ void AnimationPlayer::play_section_backwards(const StringName &p_name, double p_
 
 void AnimationPlayer::play(const StringName &p_name, double p_custom_blend, float p_custom_scale, bool p_from_end) {
 	if (auto_capture) {
-		play_with_capture(p_name, auto_capture_duration, p_custom_blend, p_custom_scale, p_from_end, auto_capture_transition_type, auto_capture_ease_type);
+		play_with_capture(p_name, auto_capture_duration, p_custom_blend, p_custom_scale, p_from_end auto_capture_easing);
 	} else {
 		_play(p_name, p_custom_blend, p_custom_scale, p_from_end);
 	}
@@ -536,7 +536,7 @@ void AnimationPlayer::play_section(const StringName &p_name, double p_start_time
 	}
 }
 
-void AnimationPlayer::_capture(const StringName &p_name, bool p_from_end, double p_duration, Tween::TransitionType p_trans_type, Tween::EaseType p_ease_type) {
+void AnimationPlayer::_capture(const StringName &p_name, bool p_from_end, double p_duration, Ref<Easing> p_easing) {
 	StringName name = p_name;
 	if (name == StringName()) {
 		name = playback.assigned;
@@ -569,11 +569,11 @@ void AnimationPlayer::_capture(const StringName &p_name, bool p_from_end, double
 	if (Math::is_zero_approx(p_duration)) {
 		return;
 	}
-	capture(name, p_duration, p_trans_type, p_ease_type);
+	capture(name, p_duration, p_easing);
 }
 
-void AnimationPlayer::play_with_capture(const StringName &p_name, double p_duration, double p_custom_blend, float p_custom_scale, bool p_from_end, Tween::TransitionType p_trans_type, Tween::EaseType p_ease_type) {
-	_capture(p_name, p_from_end, p_duration, p_trans_type, p_ease_type);
+void AnimationPlayer::play_with_capture(const StringName &p_name, double p_duration, double p_custom_blend, float p_custom_scale, bool p_from_end, Ref<Easing> p_easing) {
+	_capture(p_name, p_from_end, p_duration, p_easing);
 	_play(p_name, p_custom_blend, p_custom_scale, p_from_end);
 }
 
@@ -854,20 +854,12 @@ double AnimationPlayer::get_auto_capture_duration() const {
 	return auto_capture_duration;
 }
 
-void AnimationPlayer::set_auto_capture_transition_type(Tween::TransitionType p_auto_capture_transition_type) {
-	auto_capture_transition_type = p_auto_capture_transition_type;
+void AnimationPlayer::set_auto_capture_easing(Ref<Easing> p_easing) {
+	auto_capture_easing = p_easing;
 }
 
-Tween::TransitionType AnimationPlayer::get_auto_capture_transition_type() const {
-	return auto_capture_transition_type;
-}
-
-void AnimationPlayer::set_auto_capture_ease_type(Tween::EaseType p_auto_capture_ease_type) {
-	auto_capture_ease_type = p_auto_capture_ease_type;
-}
-
-Tween::EaseType AnimationPlayer::get_auto_capture_ease_type() const {
-	return auto_capture_ease_type;
+Ref<Easing> AnimationPlayer::get_auto_capture_easing() const {
+	return auto_capture_easing;
 }
 
 #ifdef TOOLS_ENABLED
@@ -964,10 +956,8 @@ void AnimationPlayer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_auto_capture"), &AnimationPlayer::is_auto_capture);
 	ClassDB::bind_method(D_METHOD("set_auto_capture_duration", "auto_capture_duration"), &AnimationPlayer::set_auto_capture_duration);
 	ClassDB::bind_method(D_METHOD("get_auto_capture_duration"), &AnimationPlayer::get_auto_capture_duration);
-	ClassDB::bind_method(D_METHOD("set_auto_capture_transition_type", "auto_capture_transition_type"), &AnimationPlayer::set_auto_capture_transition_type);
-	ClassDB::bind_method(D_METHOD("get_auto_capture_transition_type"), &AnimationPlayer::get_auto_capture_transition_type);
-	ClassDB::bind_method(D_METHOD("set_auto_capture_ease_type", "auto_capture_ease_type"), &AnimationPlayer::set_auto_capture_ease_type);
-	ClassDB::bind_method(D_METHOD("get_auto_capture_ease_type"), &AnimationPlayer::get_auto_capture_ease_type);
+	ClassDB::bind_method(D_METHOD("set_auto_capture_easing", "easing"), &AnimationPlayer::set_auto_capture_easing);
+	ClassDB::bind_method(D_METHOD("get_auto_capture_easing"), &AnimationPlayer::get_auto_capture_easing);
 
 	ClassDB::bind_method(D_METHOD("play", "name", "custom_blend", "custom_speed", "from_end"), &AnimationPlayer::play, DEFVAL(StringName()), DEFVAL(-1), DEFVAL(1.0), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("play_section_with_markers", "name", "start_marker", "end_marker", "custom_blend", "custom_speed", "from_end"), &AnimationPlayer::play_section_with_markers, DEFVAL(StringName()), DEFVAL(StringName()), DEFVAL(StringName()), DEFVAL(-1), DEFVAL(1.0), DEFVAL(false));
@@ -975,7 +965,7 @@ void AnimationPlayer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("play_backwards", "name", "custom_blend"), &AnimationPlayer::play_backwards, DEFVAL(StringName()), DEFVAL(-1));
 	ClassDB::bind_method(D_METHOD("play_section_with_markers_backwards", "name", "start_marker", "end_marker", "custom_blend"), &AnimationPlayer::play_section_with_markers_backwards, DEFVAL(StringName()), DEFVAL(StringName()), DEFVAL(StringName()), DEFVAL(-1));
 	ClassDB::bind_method(D_METHOD("play_section_backwards", "name", "start_time", "end_time", "custom_blend"), &AnimationPlayer::play_section_backwards, DEFVAL(StringName()), DEFVAL(-1), DEFVAL(-1), DEFVAL(-1));
-	ClassDB::bind_method(D_METHOD("play_with_capture", "name", "duration", "custom_blend", "custom_speed", "from_end", "trans_type", "ease_type"), &AnimationPlayer::play_with_capture, DEFVAL(StringName()), DEFVAL(-1.0), DEFVAL(-1), DEFVAL(1.0), DEFVAL(false), DEFVAL(Tween::TRANS_LINEAR), DEFVAL(Tween::EASE_IN));
+	ClassDB::bind_method(D_METHOD("play_with_capture", "name", "duration", "custom_blend", "custom_speed", "from_end", "easing"), &AnimationPlayer::play_with_capture, DEFVAL(StringName()), DEFVAL(-1.0), DEFVAL(-1), DEFVAL(1.0), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("pause"), &AnimationPlayer::pause);
 	ClassDB::bind_method(D_METHOD("stop", "keep_state"), &AnimationPlayer::stop, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("is_playing"), &AnimationPlayer::is_playing);
@@ -1023,8 +1013,7 @@ void AnimationPlayer::_bind_methods() {
 	ADD_GROUP("Playback Options", "playback_");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "playback_auto_capture"), "set_auto_capture", "is_auto_capture");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "playback_auto_capture_duration", PROPERTY_HINT_NONE, "suffix:s"), "set_auto_capture_duration", "get_auto_capture_duration");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "playback_auto_capture_transition_type", PROPERTY_HINT_ENUM, "Linear,Sine,Quint,Quart,Quad,Expo,Elastic,Cubic,Circ,Bounce,Back,Spring"), "set_auto_capture_transition_type", "get_auto_capture_transition_type");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "playback_auto_capture_ease_type", PROPERTY_HINT_ENUM, "In,Out,InOut,OutIn"), "set_auto_capture_ease_type", "get_auto_capture_ease_type");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "playback_auto_capture_easing", PROPERTY_HINT_RESOURCE_TYPE, "Easing"), "set_auto_capture_easing", "set_auto_capture_easing");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "playback_default_blend_time", PROPERTY_HINT_RANGE, "0,4096,0.01,suffix:s"), "set_default_blend_time", "get_default_blend_time");
 
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "speed_scale", PROPERTY_HINT_RANGE, "-4,4,0.001,or_less,or_greater"), "set_speed_scale", "get_speed_scale");

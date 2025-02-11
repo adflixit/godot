@@ -785,6 +785,7 @@ class AnimationTrackEditor : public VBoxContainer {
 	ConfirmationDialog *ease_dialog = nullptr;
 	OptionButton *transition_selection = nullptr;
 	OptionButton *ease_selection = nullptr;
+	EditorResourcePicker *easing_picker = nullptr;
 	SpinBox *ease_fps = nullptr;
 
 	void _select_all_tracks_for_copy();

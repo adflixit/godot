@@ -57,9 +57,7 @@ void Tweener::_bind_methods() {
 Ref<Easing> Tween::default_easing;
 
 void Tween::init_static() {
-	Ref<LinearEasing> ref;
-	ref.instantiate();
-	default_easing = ref;
+	default_easing = Easing::from_equation(Easing::EQ_LINEAR);
 }
 
 void Tween::free_static() {

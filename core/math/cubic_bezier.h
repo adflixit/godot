@@ -10,19 +10,19 @@ class CubicBezier : public RefCounted {
 	static const int MAX_NEWTON_ITERATIONS = 4;
 	static constexpr real_t BEZIER_EPSILON = 1e-7;
 
-	real_t ax;
-	real_t bx;
-	real_t cx;
+	real_t ax = 0.0;
+	real_t bx = 0.0;
+	real_t cx = 0.0;
 
-	real_t ay;
-	real_t by;
-	real_t cy;
+	real_t ay = 0.0;
+	real_t by = 0.0;
+	real_t cy = 0.0;
 
-	real_t start_gradient;
-	real_t end_gradient;
+	real_t start_gradient = 0.0;
+	real_t end_gradient = 0.0;
 
-	real_t range_min;
-	real_t range_max;
+	real_t range_min = 0.0;
+	real_t range_max = 0.0;
 
 	real_t spline_samples[SPLINE_SAMPLES];
 

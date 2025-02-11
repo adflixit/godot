@@ -1110,7 +1110,7 @@ void AnimationMixer::blend_capture(double p_delta) {
 		return;
 	}
 
-	real_t weight = Tween::run_equation(capture_cache.trans_type, capture_cache.ease_type, capture_cache.remain, 0.0, 1.0, 1.0);
+	real_t weight = Tween::run_equation(capture_cache.easing, capture_cache.remain, 0.0, 1.0, 1.0);
 
 	// Blend with other animations.
 	real_t inv = 1.0 - weight;
@@ -2288,7 +2288,7 @@ Ref<AnimatedValuesBackup> AnimationMixer::apply_reset(bool p_user_initiated) {
 /* -- Capture feature ------------------------- */
 /* -------------------------------------------- */
 
-void AnimationMixer::capture(const StringName &p_name, double p_duration, Tween::TransitionType p_trans_type, Tween::EaseType p_ease_type) {
+void AnimationMixer::capture(const StringName &p_name, double p_duration, Ref<Easing> p_easing) {
 	ERR_FAIL_COND(!active);
 	ERR_FAIL_COND(!has_animation(p_name));
 	ERR_FAIL_COND(p_duration <= 0);
@@ -2300,8 +2300,7 @@ void AnimationMixer::capture(const StringName &p_name, double p_duration, Tween:
 
 	capture_cache.remain = 1.0;
 	capture_cache.step = 1.0 / p_duration;
-	capture_cache.trans_type = p_trans_type;
-	capture_cache.ease_type = p_ease_type;
+	capture_cache.easing = p_easing;
 	if (capture_cache.animation.is_valid()) {
 		animation_track_num_to_track_cashe.erase(capture_cache.animation);
 	}
@@ -2446,7 +2445,7 @@ void AnimationMixer::_bind_methods() {
 	GDVIRTUAL_BIND(_post_process_key_value, "animation", "track", "value", "object_id", "object_sub_idx");
 
 	/* ---- Capture feature ---- */
-	ClassDB::bind_method(D_METHOD("capture", "name", "duration", "trans_type", "ease_type"), &AnimationMixer::capture, DEFVAL(Tween::TRANS_LINEAR), DEFVAL(Tween::EASE_IN));
+	ClassDB::bind_method(D_METHOD("capture", "name", "duration", "easing"), &AnimationMixer::capture);
 
 	/* ---- Reset on save ---- */
 	ClassDB::bind_method(D_METHOD("set_reset_on_save_enabled", "enabled"), &AnimationMixer::set_reset_on_save_enabled);

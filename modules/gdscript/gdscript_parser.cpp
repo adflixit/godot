@@ -529,6 +529,7 @@ void GDScriptParser::synchronize() {
 			case GDScriptTokenizer::Token::FUNC:
 			case GDScriptTokenizer::Token::STATIC:
 			case GDScriptTokenizer::Token::VAR:
+			case GDScriptTokenizer::Token::LET:
 			case GDScriptTokenizer::Token::CONST:
 			case GDScriptTokenizer::Token::SIGNAL:
 			//case GDScriptTokenizer::Token::IF: // Can also be inside expressions.
@@ -1077,18 +1078,23 @@ void GDScriptParser::parse_class_body(bool p_is_multiline) {
 }
 
 GDScriptParser::VariableNode *GDScriptParser::parse_variable(bool p_is_static) {
-	return parse_variable(p_is_static, true);
+	return parse_variable(p_is_static, true, false);
 }
 
-GDScriptParser::VariableNode *GDScriptParser::parse_variable(bool p_is_static, bool p_allow_property) {
+GDScriptParser::VariableNode *GDScriptParser::parse_immutable_variable(bool p_is_static) {
+	return parse_variable(p_is_static, true, true);
+}
+
+GDScriptParser::VariableNode *GDScriptParser::parse_variable(bool p_is_static, bool p_allow_property, bool p_immutable) {
 	VariableNode *variable = alloc_node<VariableNode>();
 
-	if (!consume(GDScriptTokenizer::Token::IDENTIFIER, R"(Expected variable name after "var".)")) {
+	if (!consume(GDScriptTokenizer::Token::IDENTIFIER, vformat(R"(Expected variable name after "%s".)", p_immutable ? "let" : "var"))) {
 		complete_extents(variable);
 		return nullptr;
 	}
 
 	variable->identifier = parse_identifier();
+	variable->immutable = p_immutable;
 	variable->export_info.name = variable->identifier->name;
 	variable->is_static = p_is_static;
 

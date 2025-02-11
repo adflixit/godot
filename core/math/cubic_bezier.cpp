@@ -179,6 +179,7 @@ real_t CubicBezier::get_range_max() const {
 
 void CubicBezier::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("init", "x1", "y1", "x2", "y2"), &CubicBezier::init);
+
 	ClassDB::bind_method(D_METHOD("sample_curve_x", "t"), &CubicBezier::sample_curve_x);
 	ClassDB::bind_method(D_METHOD("sample_curve_y", "t"), &CubicBezier::sample_curve_y);
 	ClassDB::bind_method(D_METHOD("sample_curve_derivative_x", "t"), &CubicBezier::sample_curve_derivative_x);

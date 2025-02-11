@@ -6808,7 +6808,7 @@ void AnimationTrackEditor::_edit_menu_pressed(int p_option) {
 		} break;
 
 		case EDIT_EASE_SELECTION: {
-			ease_dialog->popup_centered(Size2(200, 100) * EDSCALE);
+			ease_dialog->popup_centered(Size2(200, 200) * EDSCALE);
 		} break;
 		case EDIT_EASE_CONFIRM: {
 			EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
@@ -6816,6 +6816,7 @@ void AnimationTrackEditor::_edit_menu_pressed(int p_option) {
 
 			Tween::TransitionType transition_type = static_cast<Tween::TransitionType>(transition_selection->get_selected_id());
 			Tween::EaseType ease_type = static_cast<Tween::EaseType>(ease_selection->get_selected_id());
+			Ref<Easing> easing = static_cast<Ref<Easing>>(ease_selection->get_selected_id());;
 			float fps = ease_fps->get_value();
 			double dur_step = 1.0 / fps;
 
@@ -7905,38 +7906,19 @@ AnimationTrackEditor::AnimationTrackEditor() {
 	GridContainer *ease_grid = memnew(GridContainer);
 	ease_grid->set_columns(2);
 	ease_dialog->add_child(ease_grid);
-	transition_selection = memnew(OptionButton);
-	transition_selection->add_item(TTR("Linear", "Transition Type"), Tween::TRANS_LINEAR);
-	transition_selection->add_item(TTR("Sine", "Transition Type"), Tween::TRANS_SINE);
-	transition_selection->add_item(TTR("Quint", "Transition Type"), Tween::TRANS_QUINT);
-	transition_selection->add_item(TTR("Quart", "Transition Type"), Tween::TRANS_QUART);
-	transition_selection->add_item(TTR("Quad", "Transition Type"), Tween::TRANS_QUAD);
-	transition_selection->add_item(TTR("Expo", "Transition Type"), Tween::TRANS_EXPO);
-	transition_selection->add_item(TTR("Elastic", "Transition Type"), Tween::TRANS_ELASTIC);
-	transition_selection->add_item(TTR("Cubic", "Transition Type"), Tween::TRANS_CUBIC);
-	transition_selection->add_item(TTR("Circ", "Transition Type"), Tween::TRANS_CIRC);
-	transition_selection->add_item(TTR("Bounce", "Transition Type"), Tween::TRANS_BOUNCE);
-	transition_selection->add_item(TTR("Back", "Transition Type"), Tween::TRANS_BACK);
-	transition_selection->add_item(TTR("Spring", "Transition Type"), Tween::TRANS_SPRING);
-	transition_selection->select(Tween::TRANS_LINEAR); // Default
-	transition_selection->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED); // Translation context is needed.
-	ease_selection = memnew(OptionButton);
-	ease_selection->add_item(TTR("In", "Ease Type"), Tween::EASE_IN);
-	ease_selection->add_item(TTR("Out", "Ease Type"), Tween::EASE_OUT);
-	ease_selection->add_item(TTR("InOut", "Ease Type"), Tween::EASE_IN_OUT);
-	ease_selection->add_item(TTR("OutIn", "Ease Type"), Tween::EASE_OUT_IN);
-	ease_selection->select(Tween::EASE_IN_OUT); // Default
-	ease_selection->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED); // Translation context is needed.
+	easing_picker = memnew(EditorResourcePicker);
+	easing_picker->set_base_type("Easing");
+	easing_picker->set_resource_owner(this);
+	easing_picker->set_editable(true);
+	easing_picker->set_h_size_flags(SIZE_EXPAND_FILL);
 	ease_fps = memnew(SpinBox);
 	ease_fps->set_min(FPS_DECIMAL);
 	ease_fps->set_max(999);
 	ease_fps->set_step(FPS_DECIMAL);
 	ease_fps->set_value(30); // Default
-	ease_grid->add_child(memnew(Label(TTR("Transition Type:"))));
-	ease_grid->add_child(transition_selection);
-	ease_grid->add_child(memnew(Label(TTR("Ease Type:"))));
-	ease_grid->add_child(ease_selection);
-	ease_grid->add_child(memnew(Label(TTR("FPS:"))));
+	ease_grid->add_child(memnew(Label(TTR("Easing"))));
+	ease_grid->add_child(easing_picker);
+	ease_grid->add_child(memnew(Label(TTR("FPS"))));
 	ease_grid->add_child(ease_fps);
 
 	//

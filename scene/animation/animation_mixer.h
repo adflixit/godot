@@ -32,11 +32,11 @@
 #define ANIMATION_MIXER_H
 
 #include "core/templates/a_hash_map.h"
-#include "scene/animation/tween.h"
 #include "scene/main/node.h"
 #include "scene/resources/animation.h"
 #include "scene/resources/animation_library.h"
 #include "scene/resources/audio_stream_polyphonic.h"
+#include "scene/resources/easing.h"
 
 class AnimatedValuesBackup;
 
@@ -382,8 +382,7 @@ protected:
 		Ref<Animation> animation;
 		double remain = 0.0;
 		double step = 0.0;
-		Tween::TransitionType trans_type = Tween::TRANS_LINEAR;
-		Tween::EaseType ease_type = Tween::EASE_IN;
+		Ref<Easing> easing;
 
 		void clear() {
 			animation.unref();
@@ -466,7 +465,7 @@ public:
 	virtual void clear_caches(); // Must be called by hand if an animation was modified after added.
 
 	/* ---- Capture feature ---- */
-	void capture(const StringName &p_name, double p_duration, Tween::TransitionType p_trans_type = Tween::TRANS_LINEAR, Tween::EaseType p_ease_type = Tween::EASE_IN);
+	void capture(const StringName &p_name, double p_duration, Ref<Easing> easing);
 
 	/* ---- Reset on save ---- */
 	void set_reset_on_save_enabled(bool p_enabled);
