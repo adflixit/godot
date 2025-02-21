@@ -506,7 +506,7 @@ void register_scene_types() {
 	/* REGISTER ANIMATION */
 
 	GDREGISTER_ABSTRACT_CLASS(Easing);
-	GDREGISTER_CLASS(FunctionEasing);
+	GDREGISTER_CLASS(EquationEasing);
 	GDREGISTER_CLASS(CallableEasing);
 	GDREGISTER_CLASS(CubicBezierEasing);
 	GDREGISTER_CLASS(Tween);
