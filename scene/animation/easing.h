@@ -3,13 +3,22 @@
 
 #include "core/object/ref_counted.h"
 
-class FunctionEasing;
-
 class Easing : public RefCounted {
 	GDCLASS(Easing, RefCounted);
 
+protected:
+	static void _bind_methods();
+
 public:
-	enum EasingEquation {
+	virtual real_t ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const = 0;
+	virtual ~Easing() {}
+};
+
+class EquationEasing : public Easing {
+	GDCLASS(EquationEasing, Easing);
+
+public:
+	enum Equation {
 		EQ_LINEAR,
 		EQ_SINE_IN,
 		EQ_SINE_OUT,
@@ -60,35 +69,22 @@ public:
 
 private:
 	typedef real_t (*EasingFunc)(real_t p_t, real_t p_b, real_t p_c, real_t p_d);
-	static EasingFunc easing_functions[EQ_MAX];
+	static EasingFunc equations[EQ_MAX];
+
+	EasingFunc func = nullptr;
 
 protected:
 	static void _bind_methods();
 
 public:
-	static Ref<FunctionEasing> from_equation(EasingEquation p_equation);
-
-	virtual real_t ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const = 0;
-
-	virtual ~Easing() {}
-};
-
-VARIANT_ENUM_CAST(Easing::EasingEquation);
-
-class FunctionEasing : public Easing {
-	GDCLASS(FunctionEasing, Easing);
-
-	Easing::EasingFunc func = nullptr;
-
-protected:
-	static void _bind_methods();
-
-public:
+	static Ref<EquationEasing> create(const Callable &p_callable);
 	real_t ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const override;
 
-	FunctionEasing(Easing::EasingFunc p_func);
-	FunctionEasing();
+	EquationEasing(Equation p_equation);
+	EquationEasing();
 };
+
+VARIANT_ENUM_CAST(EquationEasing::Equation);
 
 class CallableEasing : public Easing {
 	GDCLASS(CallableEasing, Easing);
@@ -99,8 +95,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	static Ref<CallableEasing> create(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2);
-
+	static Ref<CallableEasing> create(const Callable &p_callable);
 	real_t ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const override;
 
 	CallableEasing(const Callable &p_callable);

@@ -2,7 +2,11 @@
 
 #include "scene/animation/easing_equations.h"
 
-Easing::EasingFunc Easing::easing_functions[Easing::EQ_MAX] = {
+void Easing::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("ease", "t", "b", "c", "d"), &Easing::ease);
+}
+
+Easing::EasingFunc EquationEasing::equations[EquationEasing::EQ_MAX] = {
 	&linear::in,
 	&sine::in,
 	&sine::out,
@@ -50,13 +54,17 @@ Easing::EasingFunc Easing::easing_functions[Easing::EQ_MAX] = {
 	&spring::out_in,
 };
 
-Ref<FunctionEasing> Easing::from_equation(EasingEquation p_equation) {
-	Ref<FunctionEasing> ref = memnew(FunctionEasing(easing_functions[p_equation]));
+Ref<EquationEasing> EquationEasing::create(EquationEasing::Equation p_equation) {
+	Ref<EquationEasing> ref = memnew(EquationEasing(p_equation));
 	return ref;
 }
 
-void Easing::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("ease", "t", "b", "c", "d"), &Easing::ease);
+real_t EquationEasing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const {
+	return func(p_t, p_b, p_c, p_d);
+}
+
+void EquationEasing::_bind_methods() {
+	ClassDB::bind_static_method("EquationEasing", D_METHOD("create", "equation"), &EquationEasing::create);
 
 	BIND_ENUM_CONSTANT(EQ_LINEAR);
 	BIND_ENUM_CONSTANT(EQ_SINE_IN);
@@ -105,18 +113,12 @@ void Easing::_bind_methods() {
 	BIND_ENUM_CONSTANT(EQ_SPRING_OUT_IN);
 }
 
-real_t FunctionEasing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const {
-	return func(p_t, p_b, p_c, p_d);
+EquationEasing::EquationEasing(Equation p_equation) {
+	func = equations[p_equation];
 }
 
-void FunctionEasing::_bind_methods() {
-}
-
-FunctionEasing::FunctionEasing(EasingFunc p_func) {
-	func = p_func;
-}
-
-FunctionEasing::FunctionEasing() {
+EquationEasing::EquationEasing() {
+	ERR_FAIL_MSG("EquationEasing can't be created directly. Use the create() method.");
 }
 
 Ref<CallableEasing> CallableEasing::create(const Callable &p_callable) {
@@ -133,14 +135,12 @@ real_t CallableEasing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) cons
 
 	callable.callp(args, 4, result, ce);
 	if (ce.error != Callable::CallError::CALL_OK) {
-		ERR_FAIL_V_MSG(0.0, vformat("Error calling ease function: %s.", Variant::get_callable_error_text(callable, args, 4, ce)));
+		ERR_FAIL_V_MSG(0.0, vformat("Error calling method from CallableEasing: %s.", Variant::get_callable_error_text(callable, args, 4, ce)));
+	} else if (result.get_type() != Variant::FLOAT) {
+		ERR_FAIL_V_MSG(0.0, vformat("Wrong return type in CallableEasing method. Expected float, got %s.", Variant::get_type_name(result.get_type())));
 	}
 
-#ifdef REAL_T_IS_DOUBLE
-	return result.operator double();
-#else
-	return result.operator float();
-#endif
+	return result;
 }
 
 void CallableEasing::_bind_methods() {
@@ -152,4 +152,5 @@ CallableEasing::CallableEasing(const Callable &p_callable) {
 }
 
 CallableEasing::CallableEasing() {
+	ERR_FAIL_MSG("CallableEasing can't be created directly. Use the create() method.");
 }
