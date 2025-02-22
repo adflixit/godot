@@ -6103,6 +6103,17 @@ void AnimationTrackEditor::_bezier_track_set_key_handle_mode(Animation *p_anim, 
 	p_anim->bezier_track_set_key_handle_mode(p_track, p_index, p_mode, p_set_mode);
 }
 
+void AnimationTrackEditor::_ease_selection_selected(int p_index) {
+	switch (p_index) {
+		case EquationEasing::EQ_MAX: {
+			cubic_bezier_params->show();
+		} break;
+		default: {
+			cubic_bezier_params->hide();
+		} break;
+	}
+}
+
 void AnimationTrackEditor::_anim_duplicate_keys(float p_ofs, bool p_ofs_valid, int p_track) {
 	if (selection.size() && animation.is_valid()) {
 		int top_track = 0x7FFFFFFF;
@@ -6812,17 +6823,31 @@ void AnimationTrackEditor::_edit_menu_pressed(int p_option) {
 		} break;
 
 		case EDIT_EASE_SELECTION: {
-			ease_dialog->popup_centered(Size2(200, 200) * EDSCALE);
+			ease_dialog->popup_centered(Size2(600, 100) * EDSCALE);
 		} break;
 		case EDIT_EASE_CONFIRM: {
 			EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
 			undo_redo->create_action(TTR("Make Easing Keys"));
 
-			Tween::TransitionType transition_type = static_cast<Tween::TransitionType>(transition_selection->get_selected_id());
-			Tween::EaseType ease_type = static_cast<Tween::EaseType>(ease_selection->get_selected_id());
-			Ref<Easing> easing = static_cast<Ref<Easing>>(ease_selection->get_selected_id());;
+			int selected_id = ease_selection->get_selected_id();
 			float fps = ease_fps->get_value();
 			double dur_step = 1.0 / fps;
+
+			Ref<Easing> easing;
+
+			switch (selected_id) {
+				case EquationEasing::EQ_MAX: {
+					float args[4];
+					for (int i = 0; i < 4; i++) {
+						SpinBox *param = cubic_bezier_params->get_child(i);
+						args[i] = param->get_value();
+					}
+					easing = CubicBezierEasing::create(args[0], args[1], args[2], args[3]);
+				} break;
+				default: {
+					easing = EquationEasing::create(selected_id);
+				} break;
+			}
 
 			// Organize track and key.
 			HashMap<int, Vector<int>> keymap;
@@ -6884,7 +6909,7 @@ void AnimationTrackEditor::_edit_menu_pressed(int p_option) {
 						for (double delta_t = dur_step; delta_t < fixed_duration; delta_t += dur_step) {
 							Pair<real_t, Variant> keydata;
 							keydata.first = from_t + delta_t;
-							keydata.second = Tween::interpolate_variant(from_v, delta_v, delta_t, duration, transition_type, ease_type);
+							keydata.second = Tween::interpolate_variant(from_v, delta_v, delta_t, duration, easing);
 							insert_queue_new.append(keydata);
 						}
 					}
@@ -7909,26 +7934,85 @@ AnimationTrackEditor::AnimationTrackEditor() {
 
 	//
 	ease_dialog = memnew(ConfirmationDialog);
-	ease_dialog->set_title(TTR("Select Transition and Easing"));
+	ease_dialog->set_title(TTR("Select Easing"));
 	ease_dialog->connect(SceneStringName(confirmed), callable_mp(this, &AnimationTrackEditor::_edit_menu_pressed).bind(EDIT_EASE_CONFIRM));
 	add_child(ease_dialog);
+	HBoxContainer *ease_wrapper = memnew(HBoxContainer);
+	ease_dialog->add_child(ease_wrapper);
 	GridContainer *ease_grid = memnew(GridContainer);
 	ease_grid->set_columns(2);
-	ease_dialog->add_child(ease_grid);
-	easing_picker = memnew(EditorResourcePicker);
-	easing_picker->set_base_type("Easing");
-	easing_picker->set_resource_owner(this);
-	easing_picker->set_editable(true);
-	easing_picker->set_h_size_flags(SIZE_EXPAND_FILL);
+	ease_wrapper->add_child(ease_grid);
+	HBoxContainer *ease_params = memnew(HBoxContainer);
+	ease_params->set_v_size_flags(SIZE_SHRINK_BEGIN);
+	ease_wrapper->add_child(ease_params);
+	ease_selection = memnew(OptionButton);
+	ease_selection->add_item(TTR("Linear", "Easing"), EquationEasing::EQ_LINEAR);
+	ease_selection->add_item(TTR("SineIn", "Easing"), EquationEasing::EQ_SINE_IN);
+	ease_selection->add_item(TTR("SineOut", "Easing"), EquationEasing::EQ_SINE_OUT);
+	ease_selection->add_item(TTR("SineInOut", "Easing"), EquationEasing::EQ_SINE_IN_OUT);
+	ease_selection->add_item(TTR("SineOutIn", "Easing"), EquationEasing::EQ_SINE_OUT_IN);
+	ease_selection->add_item(TTR("QuintIn", "Easing"), EquationEasing::EQ_QUINT_IN);
+	ease_selection->add_item(TTR("QuintOut", "Easing"), EquationEasing::EQ_QUINT_OUT);
+	ease_selection->add_item(TTR("QuintInOut", "Easing"), EquationEasing::EQ_QUINT_IN_OUT);
+	ease_selection->add_item(TTR("QuintOutIn", "Easing"), EquationEasing::EQ_QUINT_OUT_IN);
+	ease_selection->add_item(TTR("QuartIn", "Easing"), EquationEasing::EQ_QUART_IN);
+	ease_selection->add_item(TTR("QuartOut", "Easing"), EquationEasing::EQ_QUART_OUT);
+	ease_selection->add_item(TTR("QuartInOut", "Easing"), EquationEasing::EQ_QUART_IN_OUT);
+	ease_selection->add_item(TTR("QuartOutIn", "Easing"), EquationEasing::EQ_QUART_OUT_IN);
+	ease_selection->add_item(TTR("QuadIn", "Easing"), EquationEasing::EQ_QUAD_IN);
+	ease_selection->add_item(TTR("QuadOut", "Easing"), EquationEasing::EQ_QUAD_OUT);
+	ease_selection->add_item(TTR("QuadInOut", "Easing"), EquationEasing::EQ_QUAD_IN_OUT);
+	ease_selection->add_item(TTR("QuadOutIn", "Easing"), EquationEasing::EQ_QUAD_OUT_IN);
+	ease_selection->add_item(TTR("ExpoIn", "Easing"), EquationEasing::EQ_EXPO_IN);
+	ease_selection->add_item(TTR("ExpoOut", "Easing"), EquationEasing::EQ_EXPO_OUT);
+	ease_selection->add_item(TTR("ExpoInOut", "Easing"), EquationEasing::EQ_EXPO_IN_OUT);
+	ease_selection->add_item(TTR("ExpoOutIn", "Easing"), EquationEasing::EQ_EXPO_OUT_IN);
+	ease_selection->add_item(TTR("ElasticIn", "Easing"), EquationEasing::EQ_ELASTIC_IN);
+	ease_selection->add_item(TTR("ElasticOut", "Easing"), EquationEasing::EQ_ELASTIC_OUT);
+	ease_selection->add_item(TTR("ElasticInOut", "Easing"), EquationEasing::EQ_ELASTIC_IN_OUT);
+	ease_selection->add_item(TTR("ElasticOutIn", "Easing"), EquationEasing::EQ_ELASTIC_OUT_IN);
+	ease_selection->add_item(TTR("CubicIn", "Easing"), EquationEasing::EQ_CUBIC_IN);
+	ease_selection->add_item(TTR("CubicOut", "Easing"), EquationEasing::EQ_CUBIC_OUT);
+	ease_selection->add_item(TTR("CubicInOut", "Easing"), EquationEasing::EQ_CUBIC_IN_OUT);
+	ease_selection->add_item(TTR("CubicOutIn", "Easing"), EquationEasing::EQ_CUBIC_OUT_IN);
+	ease_selection->add_item(TTR("CircIn", "Easing"), EquationEasing::EQ_CIRC_IN);
+	ease_selection->add_item(TTR("CircOut", "Easing"), EquationEasing::EQ_CIRC_OUT);
+	ease_selection->add_item(TTR("CircInOut", "Easing"), EquationEasing::EQ_CIRC_IN_OUT);
+	ease_selection->add_item(TTR("CircOutIn", "Easing"), EquationEasing::EQ_CIRC_OUT_IN);
+	ease_selection->add_item(TTR("BounceIn", "Easing"), EquationEasing::EQ_BOUNCE_IN);
+	ease_selection->add_item(TTR("BounceOut", "Easing"), EquationEasing::EQ_BOUNCE_OUT);
+	ease_selection->add_item(TTR("BounceInOut", "Easing"), EquationEasing::EQ_BOUNCE_IN_OUT);
+	ease_selection->add_item(TTR("BounceOutIn", "Easing"), EquationEasing::EQ_BOUNCE_OUT_IN);
+	ease_selection->add_item(TTR("BackIn", "Easing"), EquationEasing::EQ_BACK_IN);
+	ease_selection->add_item(TTR("BackOut", "Easing"), EquationEasing::EQ_BACK_OUT);
+	ease_selection->add_item(TTR("BackInOut", "Easing"), EquationEasing::EQ_BACK_IN_OUT);
+	ease_selection->add_item(TTR("BackOutIn", "Easing"), EquationEasing::EQ_BACK_OUT_IN);
+	ease_selection->add_item(TTR("SpringIn", "Easing"), EquationEasing::EQ_SPRING_IN);
+	ease_selection->add_item(TTR("SpringOut", "Easing"), EquationEasing::EQ_SPRING_OUT);
+	ease_selection->add_item(TTR("SpringInOut", "Easing"), EquationEasing::EQ_SPRING_IN_OUT);
+	ease_selection->add_item(TTR("SpringOutIn", "Easing"), EquationEasing::EQ_SPRING_OUT_IN);
+	ease_selection->add_item(TTR("CubicBezier", "Easing"), EquationEasing::EQ_MAX);
+	ease_selection->select(EquationEasing::EQ_LINEAR); // Default
+	ease_selection->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED); // Translation context is needed.
+	ease_selection->connect(SceneStringName(item_selected), callable_mp(this, &AnimationTrackEditor::_ease_selection_selected));
 	ease_fps = memnew(SpinBox);
 	ease_fps->set_min(FPS_DECIMAL);
 	ease_fps->set_max(999);
 	ease_fps->set_step(FPS_DECIMAL);
 	ease_fps->set_value(30); // Default
-	ease_grid->add_child(memnew(Label(TTR("Easing"))));
-	ease_grid->add_child(easing_picker);
-	ease_grid->add_child(memnew(Label(TTR("FPS"))));
+	ease_grid->add_child(memnew(Label(TTR("Easing:"))));
+	ease_grid->add_child(ease_selection);
+	ease_grid->add_child(memnew(Label(TTR("FPS:"))));
 	ease_grid->add_child(ease_fps);
+	cubic_bezier_params = memnew(HBoxContainer);
+	for (int i = 0; i < 4; i++) {
+		SpinBox *param = memnew(SpinBox);
+		param->set_min(-1.0);
+		param->set_max(2.0);
+		param->set_step(0.005);
+		cubic_bezier_params->add_child(param);
+	}
+	ease_params->add_child(cubic_bezier_params);
 
 	//
 	bake_dialog = memnew(ConfirmationDialog);

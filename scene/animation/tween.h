@@ -159,7 +159,7 @@ public:
 	Ref<Tween> sequence();
 	Ref<Tween> parallel();
 
-	static real_t run_equation(const Ref<Easing> &p_easing, real_t t, real_t b, real_t c, real_t d);
+	static real_t run_easing(const Ref<Easing> &p_easing, real_t t, real_t b, real_t c, real_t d);
 	static Variant interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, const Ref<Easing> &p_easing);
 
 	bool step(double p_delta);

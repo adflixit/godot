@@ -1107,7 +1107,7 @@ void AnimationMixer::blend_capture(double p_delta) {
 		return;
 	}
 
-	real_t weight = Tween::run_equation(capture_cache.easing, capture_cache.remain, 0.0, 1.0, 1.0);
+	real_t weight = Tween::run_easing(capture_cache.easing, capture_cache.remain, 0.0, 1.0, 1.0);
 
 	// Blend with other animations.
 	real_t inv = 1.0 - weight;

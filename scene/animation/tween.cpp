@@ -62,7 +62,7 @@ void Tweener::_bind_methods() {
 Ref<Easing> Tween::default_easing;
 
 void Tween::init_static() {
-	default_easing = Easing::from_equation(Easing::EQ_LINEAR);
+	default_easing = EquationEasing::create(EquationEasing::EQ_LINEAR);
 }
 
 void Tween::free_static() {
@@ -433,7 +433,7 @@ double Tween::get_total_time() const {
 	return total_time;
 }
 
-real_t Tween::run_equation(const Ref<Easing> &p_easing, real_t p_time, real_t p_initial, real_t p_delta, real_t p_duration) {
+real_t Tween::run_easing(const Ref<Easing> &p_easing, real_t p_time, real_t p_initial, real_t p_delta, real_t p_duration) {
 	if (p_duration == 0) {
 		// Special case to avoid dividing by 0 in equations.
 		return p_initial + p_delta;
@@ -444,7 +444,7 @@ real_t Tween::run_equation(const Ref<Easing> &p_easing, real_t p_time, real_t p_
 
 Variant Tween::interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, const Ref<Easing> &p_easing) {
 	Variant ret = Animation::add_variant(p_initial_val, p_delta_val);
-	ret = Animation::interpolate_variant(p_initial_val, ret, run_equation(p_easing, p_time, 0.0, 1.0, p_duration), p_initial_val.is_string());
+	ret = Animation::interpolate_variant(p_initial_val, ret, run_easing(p_easing, p_time, 0.0, 1.0, p_duration), p_initial_val.is_string());
 	return ret;
 }
 
@@ -554,14 +554,6 @@ void PropertyTweener::start() {
 		return;
 	}
 
-	if (easing.is_null()) {
-		if (tween->easing.is_null()) {
-			easing = Tween::default_easing;
-		} else {
-			easing = tween->easing;
-		}
-	}
-
 	if (do_continue) {
 		if (Math::is_zero_approx(delay)) {
 			initial_val = target_instance->get_indexed(property);
@@ -615,11 +607,12 @@ bool PropertyTweener::step(double &r_delta) {
 }
 
 void PropertyTweener::set_tween(const Ref<Tween> &p_tween) {
-	if (trans_type == Tween::TRANS_MAX) {
-		trans_type = p_tween->get_trans();
-	}
-	if (ease_type == Tween::EASE_MAX) {
-		ease_type = p_tween->get_ease();
+	if (easing.is_null()) {
+		if (p_tween->easing.is_null()) {
+			easing = Tween::default_easing;
+		} else {
+			easing = p_tween->easing;
+		}
 	}
 }
 
@@ -780,11 +773,12 @@ bool MethodTweener::step(double &r_delta) {
 }
 
 void MethodTweener::set_tween(const Ref<Tween> &p_tween) {
-	if (trans_type == Tween::TRANS_MAX) {
-		trans_type = p_tween->get_trans();
-	}
-	if (ease_type == Tween::EASE_MAX) {
-		ease_type = p_tween->get_ease();
+	if (easing.is_null()) {
+		if (p_tween->easing.is_null()) {
+			easing = Tween::default_easing;
+		} else {
+			easing = p_tween->easing;
+		}
 	}
 }
 

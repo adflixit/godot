@@ -783,9 +783,9 @@ class AnimationTrackEditor : public VBoxContainer {
 	SpinBox *scale = nullptr;
 
 	ConfirmationDialog *ease_dialog = nullptr;
-	OptionButton *transition_selection = nullptr;
 	OptionButton *ease_selection = nullptr;
-	EditorResourcePicker *easing_picker = nullptr;
+	void _ease_selection_selected(int p_index);
+	HBoxContainer *cubic_bezier_params = nullptr;
 	SpinBox *ease_fps = nullptr;
 
 	void _select_all_tracks_for_copy();
