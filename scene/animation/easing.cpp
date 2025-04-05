@@ -2,11 +2,19 @@
 
 #include "scene/animation/easing_equations.h"
 
-void Easing::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("ease", "t", "b", "c", "d"), &Easing::ease);
+real_t Easing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const {
+	uint32_t ret = 0.0;
+	GDVIRTUAL_CALL(_ease, p_t, p_b, p_c, p_d, ret);
+	return ret;
 }
 
-Easing::EasingFunc EquationEasing::equations[EquationEasing::EQ_MAX] = {
+void Easing::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("ease", "t", "b", "c", "d"), &Easing::ease);
+
+	GDVIRTUAL_BIND(_ease, "t", "b", "c", "d")
+}
+
+EquationEasing::EasingFunc EquationEasing::equations[EquationEasing::EQ_MAX] = {
 	&linear::in,
 	&sine::in,
 	&sine::out,
@@ -64,6 +72,7 @@ real_t EquationEasing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) cons
 }
 
 void EquationEasing::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("ease", "t", "b", "c", "d"), &EquationEasing::ease);
 	ClassDB::bind_static_method("EquationEasing", D_METHOD("create", "equation"), &EquationEasing::create);
 
 	BIND_ENUM_CONSTANT(EQ_LINEAR);
@@ -144,6 +153,7 @@ real_t CallableEasing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) cons
 }
 
 void CallableEasing::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("ease", "t", "b", "c", "d"), &CallableEasing::ease);
 	ClassDB::bind_static_method("CallableEasing", D_METHOD("create", "callable"), &CallableEasing::create);
 }
 
