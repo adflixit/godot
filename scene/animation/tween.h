@@ -154,6 +154,8 @@ public:
 	int get_loops_left() const;
 	Ref<Tween> set_speed_scale(float p_speed);
 	Ref<Tween> set_easing(Ref<Easing> p_easing);
+	Ref<Tween> set_equation(EquationEasing::Equation p_equation);
+	Ref<Tween> set_callable(const Callable &p_callable);
 	Ref<Easing> get_easing();
 
 	Ref<Tween> sequence();

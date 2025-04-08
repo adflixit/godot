@@ -290,6 +290,16 @@ Ref<Tween> Tween::set_easing(Ref<Easing> p_easing) {
 	return this;
 }
 
+Ref<Tween> Tween::set_equation(EquationEasing::Equation p_equation) {
+	easing = EquationEasing::create(p_equation);
+	return this;
+}
+
+Ref<Tween> Tween::set_callable(const Callable &p_callable) {
+	easing = CallableEasing::create(p_callable);
+	return this;
+}
+
 Ref<Easing> Tween::get_easing() {
 	return easing;
 }
@@ -482,6 +492,8 @@ void Tween::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_loops_left"), &Tween::get_loops_left);
 	ClassDB::bind_method(D_METHOD("set_speed_scale", "scale"), &Tween::set_speed_scale);
 	ClassDB::bind_method(D_METHOD("ease", "easing"), &Tween::set_easing);
+	ClassDB::bind_method(D_METHOD("equation", "equation"), &Tween::set_equation);
+	ClassDB::bind_method(D_METHOD("callable", "callable"), &Tween::set_callable);
 
 	ClassDB::bind_method(D_METHOD("sequence"), &Tween::sequence);
 	ClassDB::bind_method(D_METHOD("parallel"), &Tween::parallel);
