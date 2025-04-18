@@ -3896,3 +3896,295 @@ void TextMesh::set_uppercase(bool p_uppercase) {
 bool TextMesh::is_uppercase() const {
 	return uppercase;
 }
+
+/**
+	CircleMesh2D
+*/
+
+void CircleMesh2D::_update_lightmap_size() {
+	if (get_add_uv2()) {
+		Size2i _lightmap_size_hint;
+		float texel_size = get_lightmap_texel_size();
+		float padding = get_uv2_padding();
+		float diameter = radius * 2.0;
+
+		_lightmap_size_hint.x = MAX(1.0, (diameter / texel_size) + padding);
+		_lightmap_size_hint.y = MAX(1.0, (diameter / texel_size) + padding);
+
+		set_lightmap_size_hint(_lightmap_size_hint);
+	}
+}
+
+void CircleMesh2D::_create_mesh_array(Array &p_arr) const {
+	float x, y, u, v;
+
+	const Vector3 normal = Vector3(0.0, 0.0, 1.0);
+
+	Vector<Vector3> points;
+	Vector<Vector3> normals;
+	Vector<float> tangents;
+	Vector<Vector2> uvs;
+	Vector<int> indices;
+
+#define ADD_TANGENT(m_x, m_y, m_z, m_d) \
+	tangents.push_back(m_x);            \
+	tangents.push_back(m_y);            \
+	tangents.push_back(m_z);            \
+	tangents.push_back(m_d);
+
+	points.push_back(Vector3(0.0, 0.0, 0.0));
+	normals.push_back(normal);
+	ADD_TANGENT(1.0, 0.0, 0.0, 1.0)
+	uvs.push_back(Vector2(0.5, 0.5));
+
+	for (int i = 0; i <= radial_segments; i++) {
+		float angle = i;
+		angle /= radial_segments;
+
+		x = sin(angle * Math_TAU);
+		y = cos(angle * Math_TAU);
+
+		u = x + 1.0;
+		v = y + 1.0;
+
+		Vector3 p = Vector3(x * radius, y * radius, 0.0);
+		points.push_back(p);
+		normals.push_back(normal);
+		ADD_TANGENT(1.0, 0.0, 0.0, 1.0)
+		uvs.push_back(Vector2(u, v));
+
+		if (i > 0) {
+			indices.push_back(0);
+			indices.push_back(i);
+			indices.push_back(i + 1);
+		}
+	}
+
+	p_arr[RS::ARRAY_VERTEX] = points;
+	p_arr[RS::ARRAY_NORMAL] = normals;
+	p_arr[RS::ARRAY_TANGENT] = tangents;
+	p_arr[RS::ARRAY_TEX_UV] = uvs;
+	p_arr[RS::ARRAY_INDEX] = indices;
+}
+
+void CircleMesh2D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_radius", "radius"), &CircleMesh2D::set_radius);
+	ClassDB::bind_method(D_METHOD("get_radius"), &CircleMesh2D::get_radius);
+
+	ClassDB::bind_method(D_METHOD("set_radial_segments", "radial_segments"), &CircleMesh2D::set_radial_segments);
+	ClassDB::bind_method(D_METHOD("get_radial_segments"), &CircleMesh2D::get_radial_segments);
+
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "radius", PROPERTY_HINT_RANGE, "0.001,100.0,0.001,or_greater,suffix:m"), "set_radius", "get_radius");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "radial_segments", PROPERTY_HINT_RANGE, "1,100,1,or_greater"), "set_radial_segments", "get_radial_segments");
+}
+
+void CircleMesh2D::set_radius(const float p_radius) {
+	radius = p_radius;
+	_update_lightmap_size();
+	_request_update();
+}
+
+float CircleMesh2D::get_radius() const {
+	return radius;
+}
+
+void CircleMesh2D::set_radial_segments(const int p_segments) {
+	radial_segments = p_segments > 4 ? p_segments : 4;
+	_request_update();
+}
+
+int CircleMesh2D::get_radial_segments() const {
+	return radial_segments;
+}
+
+CircleMesh2D::CircleMesh2D() {}
+
+/**
+	RoundedBox2D
+*/
+
+void RoundedBox2D::_update_lightmap_size() {
+	if (get_add_uv2()) {
+		Size2i _lightmap_size_hint;
+		float texel_size = get_lightmap_texel_size();
+		float padding = get_uv2_padding();
+
+		_lightmap_size_hint.x = MAX(1.0, (size.x / texel_size) + padding);
+		_lightmap_size_hint.y = MAX(1.0, (size.y / texel_size) + padding);
+
+		set_lightmap_size_hint(_lightmap_size_hint);
+	}
+}
+
+void RoundedBox2D::_create_mesh_array(Array &p_arr) const {
+	float x, y, u, v;
+
+	const Vector2 corner_rect = Vector2(corner_radius, corner_radius);
+	const Vector2 corner_coord = size / 2.0 - corner_rect;
+	const Vector2 corner_uv = corner_coord / size;
+
+	const int radial_segments = corner_detail * 4;
+	const bool extend_x = size.x > corner_radius * 2.0;
+	const bool extend_y = size.y > corner_radius * 2.0;
+	const float x_fill = size.x - corner_radius * 2.0;
+	const float y_fill = size.y - corner_radius * 2.0;
+
+	const float angle_step = Math_TAU / radial_segments;
+	float angle = 0.0;
+
+	int pivot_index = 0;
+
+	const Vector3 normal = Vector3(0.0, 0.0, 1.0);
+	const Vector2 corner_mult[4] = {
+		Vector2(1.0, 1.0),
+		Vector2(-1.0, 1.0),
+		Vector2(-1.0, -1.0),
+		Vector2(1.0, -1.0),
+	};
+
+	Vector<Vector3> points;
+	Vector<Vector3> normals;
+	Vector<float> tangents;
+	Vector<Vector2> uvs;
+	Vector<int> indices;
+
+#define ADD_TANGENT(m_x, m_y, m_z, m_d) \
+	tangents.push_back(m_x);            \
+	tangents.push_back(m_y);            \
+	tangents.push_back(m_z);            \
+	tangents.push_back(m_d);
+
+	for (int i = 0; i < 4; i++) {
+		const bool i_even = !(i & 1);
+		const bool fill_extent = !merge_overlapping || (extend_x && i_even) || (extend_y && !i_even);
+		const Vector2 pivot = corner_coord * corner_mult[i];
+		const Vector2 uv = pivot / size + Vector2(1.0, 1.0);
+
+		// Only add necessary pivot points if merge overlapping points is on.
+		// Only expand x -- top right and top left.
+		// Only expand y -- top right and bottom left.
+		if (!merge_overlapping || (extend_x && extend_y) || i == 0 || (extend_x && i == 1) || (extend_y && i == 2)) {
+			points.push_back(Vector3(pivot.x, pivot.y, 0.0));
+			normals.push_back(normal);
+			ADD_TANGENT(1.0, 0.0, 0.0, 1.0)
+			uvs.push_back(uv);
+			pivot_index = (corner_detail + 2) * i;
+		}
+
+		for (int j = 0; j <= corner_detail; j++) {
+			x = pivot.x + cos(angle) * corner_radius;
+			y = pivot.y + sin(angle) * corner_radius;
+
+			u = x / size.x + 1.0;
+			v = y / size.y + 1.0;
+
+			points.push_back(Vector3(x, y, 0.0));
+			normals.push_back(normal);
+			ADD_TANGENT(1.0, 0.0, 0.0, 1.0)
+			uvs.push_back(Vector2(u, v));
+
+			if (j > 0) {
+				indices.push_back(pivot_index);
+				indices.push_back(pivot_index + j);
+				indices.push_back(pivot_index + j + 1);
+			}
+
+			// Skip last angle step before extension.
+			if (j == corner_detail && fill_extent) {
+				break;
+			}
+
+			angle += angle_step;
+		}
+
+		// Connect next corner.
+		if (fill_extent) {
+			int next_pivot_index = (corner_detail + 2) * ((i + 1) % 4);
+
+			indices.push_back(pivot_index); // current corner
+			indices.push_back(pivot_index + corner_detail + 1); // last point of current corner
+			indices.push_back(next_pivot_index + 1); // first point of next corner
+
+			indices.push_back(pivot_index); // current corner pivot
+			indices.push_back(next_pivot_index + 1); // first point of next corner
+			indices.push_back(next_pivot_index); // next corner
+		}
+	}
+
+	// Fill the middle space.
+	if (!merge_overlapping || (extend_x && extend_y)) {
+		int pivot_index = corner_detail + 2;
+
+		indices.push_back(pivot_index * 0); // top right
+		indices.push_back(pivot_index * 1); // top left
+		indices.push_back(pivot_index * 2); // bottom left
+
+		indices.push_back(pivot_index * 0); // top right
+		indices.push_back(pivot_index * 2); // bottom left
+		indices.push_back(pivot_index * 3); // bottom right
+	}
+
+	p_arr[RS::ARRAY_VERTEX] = points;
+	p_arr[RS::ARRAY_NORMAL] = normals;
+	p_arr[RS::ARRAY_TANGENT] = tangents;
+	p_arr[RS::ARRAY_TEX_UV] = uvs;
+	p_arr[RS::ARRAY_INDEX] = indices;
+}
+
+void RoundedBox2D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_size", "size"), &RoundedBox2D::set_size);
+	ClassDB::bind_method(D_METHOD("get_size"), &RoundedBox2D::get_size);
+
+	ClassDB::bind_method(D_METHOD("set_corner_radius", "radius"), &RoundedBox2D::set_corner_radius);
+	ClassDB::bind_method(D_METHOD("get_corner_radius"), &RoundedBox2D::get_corner_radius);
+
+	ClassDB::bind_method(D_METHOD("set_corner_detail", "detail"), &RoundedBox2D::set_corner_detail);
+	ClassDB::bind_method(D_METHOD("get_corner_detail"), &RoundedBox2D::get_corner_detail);
+
+	ClassDB::bind_method(D_METHOD("set_merge_overlapping", "merge"), &RoundedBox2D::set_merge_overlapping);
+	ClassDB::bind_method(D_METHOD("get_merge_overlapping"), &RoundedBox2D::get_merge_overlapping);
+
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "size", PROPERTY_HINT_NONE, "suffix:m"), "set_size", "get_size");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "corner_radius", PROPERTY_HINT_RANGE, "0,100,0.001,or_greater,suffix:m"), "set_corner_radius", "get_corner_radius");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "corner_detail", PROPERTY_HINT_RANGE, "1,32,1"), "set_corner_detail", "get_corner_detail");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "merge"), "set_merge_overlapping", "get_merge_overlapping");
+}
+
+void RoundedBox2D::set_size(const Size2 &p_size) {
+	size = p_size;
+	_update_lightmap_size();
+	_request_update();
+}
+
+Size2 RoundedBox2D::get_size() const {
+	return size;
+}
+
+void RoundedBox2D::set_corner_radius(const float p_radius) {
+	corner_radius = CLAMP(p_radius, 0.0, MIN(size.x, size.y) / 2.0);
+	_request_update();
+}
+
+float RoundedBox2D::get_corner_radius() const {
+	return corner_radius;
+}
+
+void RoundedBox2D::set_corner_detail(const int p_detail) {
+	corner_detail = CLAMP(p_detail, 1, 32);
+	_request_update();
+}
+
+int RoundedBox2D::get_corner_detail() const {
+	return corner_detail;
+}
+
+void RoundedBox2D::set_merge_overlapping(const bool p_merge) {
+	merge_overlapping = p_merge;
+	_request_update();
+}
+
+bool RoundedBox2D::get_merge_overlapping() const {
+	return merge_overlapping;
+}
+
+RoundedBox2D::RoundedBox2D() {}
