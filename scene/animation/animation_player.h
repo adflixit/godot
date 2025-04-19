@@ -128,7 +128,7 @@ private:
 	bool movie_quit_on_finish = false;
 
 	void _play(const StringName &p_name, double p_custom_blend = -1, float p_custom_scale = 1.0, bool p_from_end = false);
-	void _capture(const StringName &p_name, bool p_from_end = false, double p_duration = -1.0, Ref<Easing> p_easing);
+	void _capture(const StringName &p_name, bool p_from_end = false, double p_duration = -1.0, Ref<Easing> p_easing = Ref<Easing>());
 	void _process_playback_data(PlaybackData &cd, double p_delta, float p_blend, bool p_seeked, bool p_internal_seeked, bool p_started, bool p_is_current = false);
 	void _blend_playback_data(double p_delta, bool p_started);
 	void _stop_internal(bool p_reset, bool p_keep_state);
@@ -196,7 +196,7 @@ public:
 	void play_backwards(const StringName &p_name = StringName(), double p_custom_blend = -1);
 	void play_section_with_markers_backwards(const StringName &p_name = StringName(), const StringName &p_start_marker = StringName(), const StringName &p_end_marker = StringName(), double p_custom_blend = -1);
 	void play_section_backwards(const StringName &p_name = StringName(), double p_start_time = -1, double p_end_time = -1, double p_custom_blend = -1);
-	void play_with_capture(const StringName &p_name = StringName(), double p_duration = -1.0, double p_custom_blend = -1, float p_custom_scale = 1.0, bool p_from_end = false, Ref<Easing> p_easing);
+	void play_with_capture(const StringName &p_name = StringName(), double p_duration = -1.0, double p_custom_blend = -1, float p_custom_scale = 1.0, bool p_from_end = false, Ref<Easing> p_easing = Ref<Easing>());
 	void queue(const StringName &p_name);
 	Vector<String> get_queue();
 	void clear_queue();

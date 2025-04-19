@@ -82,7 +82,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	static Ref<EquationEasing> create(const Callable &p_callable);
+	static Ref<EquationEasing> create(Equation p_equation);
 	real_t ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const override;
 
 	EquationEasing(Equation p_equation);

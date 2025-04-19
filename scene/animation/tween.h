@@ -31,7 +31,7 @@
 #ifndef TWEEN_H
 #define TWEEN_H
 
-#include "scene/resources/easing.h"
+#include "scene/animation/easing.h"
 
 class Tween;
 class Node;
@@ -149,7 +149,6 @@ public:
 	Ref<Tween> set_ignore_time_scale(bool p_ignore = true);
 	bool is_ignoring_time_scale() const;
 
-	Ref<Tween> set_parallel(bool p_parallel);
 	Ref<Tween> set_loops(int p_loops);
 	int get_loops_left() const;
 	Ref<Tween> set_speed_scale(float p_speed);

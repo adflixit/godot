@@ -786,10 +786,10 @@ bool MethodTweener::step(double &r_delta) {
 
 void MethodTweener::set_tween(const Ref<Tween> &p_tween) {
 	if (easing.is_null()) {
-		if (p_tween->easing.is_null()) {
-			easing = Tween::default_easing;
+		if (p_tween->get_easing().is_null()) {
+			easing = Tween::get_default_easing();
 		} else {
-			easing = p_tween->easing;
+			easing = p_tween->get_easing();
 		}
 	}
 }

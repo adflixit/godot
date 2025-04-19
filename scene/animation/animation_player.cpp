@@ -394,7 +394,7 @@ void AnimationPlayer::play_section_backwards(const StringName &p_name, double p_
 
 void AnimationPlayer::play(const StringName &p_name, double p_custom_blend, float p_custom_scale, bool p_from_end) {
 	if (auto_capture) {
-		play_with_capture(p_name, auto_capture_duration, p_custom_blend, p_custom_scale, p_from_end auto_capture_easing);
+		play_with_capture(p_name, auto_capture_duration, p_custom_blend, p_custom_scale, p_from_end, auto_capture_easing);
 	} else {
 		_play(p_name, p_custom_blend, p_custom_scale, p_from_end);
 	}
@@ -568,6 +568,9 @@ void AnimationPlayer::_capture(const StringName &p_name, bool p_from_end, double
 	}
 	if (Math::is_zero_approx(p_duration)) {
 		return;
+	}
+	if (p_easing.is_null()) {
+		p_easing = EquationEasing::create(EquationEasing::EQ_LINEAR);
 	}
 	capture(name, p_duration, p_easing);
 }

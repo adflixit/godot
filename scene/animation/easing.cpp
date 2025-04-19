@@ -3,7 +3,7 @@
 #include "scene/animation/easing_equations.h"
 
 real_t Easing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const {
-	uint32_t ret = 0.0;
+	real_t ret = 0.0;
 	GDVIRTUAL_CALL(_ease, p_t, p_b, p_c, p_d, ret);
 	return ret;
 }
@@ -62,7 +62,7 @@ EquationEasing::EasingFunc EquationEasing::equations[EquationEasing::EQ_MAX] = {
 	&spring::out_in,
 };
 
-Ref<EquationEasing> EquationEasing::create(EquationEasing::Equation p_equation) {
+Ref<EquationEasing> EquationEasing::create(Equation p_equation) {
 	Ref<EquationEasing> ref = memnew(EquationEasing(p_equation));
 	return ref;
 }
@@ -140,7 +140,8 @@ real_t CallableEasing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) cons
 
 	Variant result;
 	Callable::CallError ce;
-	const Variant *args[4] = { &p_t, &p_b, &p_c, &p_d };
+	Variant t = p_t, b = p_b, c = p_c, d = p_d;
+	const Variant *args[4] = { &t, &b, &c, &d };
 
 	callable.callp(args, 4, result, ce);
 	if (ce.error != Callable::CallError::CALL_OK) {
