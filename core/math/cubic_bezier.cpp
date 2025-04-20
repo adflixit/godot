@@ -70,11 +70,11 @@ void CubicBezier::_init_range(real_t p_y1, real_t p_y2) {
 	real_t sol2 = 0;
 
 	if (0 < t1 && t1 < 1) {
-		sol1 = _sample_curve_y(t1);
+		sol1 = sample_curve_y(t1);
 	}
 
 	if (0 < t2 && t2 < 1) {
-		sol2 = _sample_curve_y(t2);
+		sol2 = sample_curve_y(t2);
 	}
 
 	range_min = MIN(MIN(range_min, sol1), sol2);
@@ -84,7 +84,7 @@ void CubicBezier::_init_range(real_t p_y1, real_t p_y2) {
 void CubicBezier::_init_spline() {
 	real_t delta_t = 1.0 / (SPLINE_SAMPLES - 1);
 	for (int i = 0; i < SPLINE_SAMPLES; i++) {
-		spline_samples[i] = _sample_curve_x(i * delta_t);
+		spline_samples[i] = sample_curve_x(i * delta_t);
 	}
 }
 
@@ -116,11 +116,11 @@ real_t CubicBezier::solve_curve_x(real_t p_x, real_t p_epsilon) const {
 
 	real_t newton_epsilon = MIN(BEZIER_EPSILON, p_epsilon);
 	for (i = 0; i < MAX_NEWTON_ITERATIONS; i++) {
-		x2 = _sample_curve_x(t2) - p_x;
+		x2 = sample_curve_x(t2) - p_x;
 		if (Math::abs(x2) < newton_epsilon) {
 			return t2;
 		}
-		d2 = _sample_curve_derivative_x(t2);
+		d2 = sample_curve_derivative_x(t2);
 		if (Math::abs(d2) < BEZIER_EPSILON) {
 			break;
 		}
@@ -132,7 +132,7 @@ real_t CubicBezier::solve_curve_x(real_t p_x, real_t p_epsilon) const {
 	}
 
 	while (t0 < t1) {
-		x2 = _sample_curve_x(t2);
+		x2 = sample_curve_x(t2);
 		if (Math::abs(x2 - p_x) < p_epsilon) {
 			return t2;
 		}
@@ -154,7 +154,7 @@ real_t CubicBezier::solve_with_epsilon(real_t p_x, real_t p_epsilon) const {
 	if (p_x > 1.0) {
 		return 1.0 + end_gradient * (p_x - 1.0);
 	}
-	return sample_curve_y(_solve_curve_x(p_x, p_epsilon));
+	return sample_curve_y(solve_curve_x(p_x, p_epsilon));
 }
 
 real_t CubicBezier::slope_with_epsilon(real_t p_x, real_t p_epsilon) const {
