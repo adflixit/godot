@@ -42,7 +42,9 @@ AABB GPUParticles3D::get_aabb() const {
 
 void GPUParticles3D::set_emitting(bool p_emitting) {
 	// Do not return even if `p_emitting == emitting` because `emitting` is just an approximation.
-
+	if (p_emitting && p_emitting != emitting && !use_fixed_seed) {
+		set_seed(Math::rand());
+	}
 	if (p_emitting && one_shot) {
 		if (!active && !emitting) {
 			// Last cycle ended.
@@ -419,12 +421,12 @@ PackedStringArray GPUParticles3D::get_configuration_warnings() const {
 		if ((dp_count || skin.is_valid()) && (missing_trails || no_materials)) {
 			warnings.push_back(RTR("Trails enabled, but one or more mesh materials are either missing or not set for trails rendering."));
 		}
-		if (OS::get_singleton()->get_current_rendering_method() == "gl_compatibility") {
+		if (OS::get_singleton()->get_current_rendering_method() == "gl_compatibility" || OS::get_singleton()->get_current_rendering_method() == "dummy") {
 			warnings.push_back(RTR("Particle trails are only available when using the Forward+ or Mobile renderers."));
 		}
 	}
 
-	if (sub_emitter != NodePath() && OS::get_singleton()->get_current_rendering_method() == "gl_compatibility") {
+	if (sub_emitter != NodePath() && (OS::get_singleton()->get_current_rendering_method() == "gl_compatibility" || OS::get_singleton()->get_current_rendering_method() == "dummy")) {
 		warnings.push_back(RTR("Particle sub-emitters are only available when using the Forward+ or Mobile renderers."));
 	}
 

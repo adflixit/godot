@@ -645,19 +645,19 @@ void LightmapperRD::_create_acceleration_structures(RenderingDevice *rd, Size2i 
 		r_cluster_aabbs_buffer = rd->storage_buffer_create(cab.size(), cab);
 
 		Vector<uint8_t> lb = lights.to_byte_array();
-		if (lb.size() == 0) {
+		if (lb.is_empty()) {
 			lb.resize(sizeof(Light)); //even if no lights, the buffer must exist
 		}
 		lights_buffer = rd->storage_buffer_create(lb.size(), lb);
 
 		Vector<uint8_t> sb = seam_buffer_vec.to_byte_array();
-		if (sb.size() == 0) {
+		if (sb.is_empty()) {
 			sb.resize(sizeof(Vector2i) * 2); //even if no seams, the buffer must exist
 		}
 		seams_buffer = rd->storage_buffer_create(sb.size(), sb);
 
 		Vector<uint8_t> pb = p_probe_positions.to_byte_array();
-		if (pb.size() == 0) {
+		if (pb.is_empty()) {
 			pb.resize(sizeof(Probe));
 		}
 		probe_positions_buffer = rd->storage_buffer_create(pb.size(), pb);
@@ -1002,7 +1002,8 @@ LightmapperRD::BakeError LightmapperRD::_denoise(RenderingDevice *p_rd, Ref<RDSh
 	// We denoise in fixed size regions and synchronize execution to avoid GPU timeouts.
 	// We use a region with 1/4 the amount of pixels if we're denoising SH lightmaps, as
 	// all four of them are denoised in the shader in one dispatch.
-	const int max_region_size = p_bake_sh ? 512 : 1024;
+	const int user_region_size = nearest_power_of_2_templated(int(GLOBAL_GET("rendering/lightmapping/bake_performance/region_size")));
+	const int max_region_size = p_bake_sh ? user_region_size / 2 : user_region_size;
 	int x_regions = Math::division_round_up(p_atlas_size.width, max_region_size);
 	int y_regions = Math::division_round_up(p_atlas_size.height, max_region_size);
 	for (int s = 0; s < p_atlas_slices; s++) {

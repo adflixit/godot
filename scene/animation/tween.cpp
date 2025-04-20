@@ -47,7 +47,7 @@ void Tweener::start() {
 }
 
 Ref<Tween> Tweener::_get_tween() {
-	return Ref<Tween>(ObjectDB::get_instance(tween_id));
+	return ObjectDB::get_ref<Tween>(tween_id);
 }
 
 void Tweener::_finish() {
@@ -216,6 +216,7 @@ void Tween::play() {
 
 void Tween::kill() {
 	running = false; // For the sake of is_running().
+	valid = false;
 	dead = true;
 }
 
@@ -433,7 +434,7 @@ bool Tween::can_process(bool p_tree_paused) const {
 
 Node *Tween::get_bound_node() const {
 	if (is_bound) {
-		return Object::cast_to<Node>(ObjectDB::get_instance(bound_node));
+		return ObjectDB::get_instance<Node>(bound_node);
 	} else {
 		return nullptr;
 	}
@@ -523,6 +524,20 @@ Tween::Tween(SceneTree *p_parent_tree) {
 	valid = true;
 }
 
+double PropertyTweener::_get_custom_interpolated_value(const Variant &p_value) {
+	const Variant *argptr = &p_value;
+
+	Variant result;
+	Callable::CallError ce;
+	custom_method.callp(&argptr, 1, result, ce);
+	if (ce.error != Callable::CallError::CALL_OK) {
+		ERR_FAIL_V_MSG(false, "Error calling custom method from PropertyTweener: " + Variant::get_callable_error_text(custom_method, &argptr, 1, ce) + ".");
+	} else if (result.get_type() != Variant::FLOAT) {
+		ERR_FAIL_V_MSG(false, vformat("Wrong return type in PropertyTweener custom method. Expected float, got %s.", Variant::get_type_name(result.get_type())));
+	}
+	return result;
+}
+
 Ref<PropertyTweener> PropertyTweener::from(const Variant &p_value) {
 	Ref<Tween> tween = _get_tween();
 	ERR_FAIL_COND_V(tween.is_null(), nullptr);
@@ -607,11 +622,22 @@ bool PropertyTweener::step(double &r_delta) {
 
 	double time = MIN(elapsed_time - delay, duration);
 	if (time < duration) {
-		target_instance->set_indexed(property, tween->interpolate_variant(initial_val, delta_val, time, duration, easing));
+		if (custom_method.is_valid()) {
+			const Variant t = tween->interpolate_variant(0.0, 1.0, time, duration, trans_type, ease_type);
+			double result = _get_custom_interpolated_value(t);
+			target_instance->set_indexed(property, Animation::interpolate_variant(initial_val, final_val, result));
+		} else {
+			target_instance->set_indexed(property, tween->interpolate_variant(initial_val, delta_val, time, duration, trans_type, ease_type));
+		}
 		r_delta = 0;
 		return true;
 	} else {
-		target_instance->set_indexed(property, final_val);
+		if (custom_method.is_valid()) {
+			double final_t = _get_custom_interpolated_value(1.0);
+			target_instance->set_indexed(property, Animation::interpolate_variant(initial_val, final_val, final_t));
+		} else {
+			target_instance->set_indexed(property, final_val);
+		}
 		r_delta = elapsed_time - delay - duration;
 		_finish();
 		return false;
