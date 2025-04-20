@@ -3996,9 +3996,10 @@ bool TextMesh::is_uppercase() const {
 
 void CircleMesh2D::_update_lightmap_size() {
 	if (get_add_uv2()) {
+		// size must have changed, update lightmap size hint
 		Size2i _lightmap_size_hint;
-		float texel_size = get_lightmap_texel_size();
 		float padding = get_uv2_padding();
+
 		float diameter = radius * 2.0;
 
 		_lightmap_size_hint.x = MAX(1.0, (diameter / texel_size) + padding);
@@ -4034,8 +4035,8 @@ void CircleMesh2D::_create_mesh_array(Array &p_arr) const {
 		float angle = i;
 		angle /= radial_segments;
 
-		x = sin(angle * Math_TAU);
-		y = cos(angle * Math_TAU);
+		x = sin(angle * Math::TAU);
+		y = cos(angle * Math::TAU);
 
 		u = x + 1.0;
 		v = y + 1.0;
@@ -4098,8 +4099,8 @@ CircleMesh2D::CircleMesh2D() {}
 
 void RoundedBox2D::_update_lightmap_size() {
 	if (get_add_uv2()) {
+		// size must have changed, update lightmap size hint
 		Size2i _lightmap_size_hint;
-		float texel_size = get_lightmap_texel_size();
 		float padding = get_uv2_padding();
 
 		_lightmap_size_hint.x = MAX(1.0, (size.x / texel_size) + padding);
@@ -4122,7 +4123,7 @@ void RoundedBox2D::_create_mesh_array(Array &p_arr) const {
 	const float x_fill = size.x - corner_radius * 2.0;
 	const float y_fill = size.y - corner_radius * 2.0;
 
-	const float angle_step = Math_TAU / radial_segments;
+	const float angle_step = Math::TAU / radial_segments;
 	float angle = 0.0;
 
 	int pivot_index = 0;
