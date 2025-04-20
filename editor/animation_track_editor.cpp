@@ -47,6 +47,7 @@
 #include "editor/themes/editor_scale.h"
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/animation/animation_player.h"
+#include "scene/animation/cubic_bezier_easing.h"
 #include "scene/animation/tween.h"
 #include "scene/gui/check_box.h"
 #include "scene/gui/color_picker.h"
@@ -6895,13 +6896,13 @@ void AnimationTrackEditor::_edit_menu_pressed(int p_option) {
 				case EquationEasing::EQ_MAX: {
 					float args[4];
 					for (int i = 0; i < 4; i++) {
-						SpinBox *param = cubic_bezier_params->get_child(i);
+						SpinBox *param = Object::cast_to<SpinBox>(cubic_bezier_params->get_child(i));
 						args[i] = param->get_value();
 					}
 					easing = CubicBezierEasing::create(args[0], args[1], args[2], args[3]);
 				} break;
 				default: {
-					easing = EquationEasing::create(selected_id);
+					easing = EquationEasing::create(static_cast<EquationEasing::Equation>(selected_id));
 				} break;
 			}
 
