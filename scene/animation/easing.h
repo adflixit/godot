@@ -1,5 +1,4 @@
-#ifndef EASING_H
-#define EASING_H
+#pragma once
 
 #include "core/object/ref_counted.h"
 #include "core/object/gdvirtual.gen.inc"
@@ -106,5 +105,3 @@ public:
 	CallableEasing(const Callable &p_callable);
 	CallableEasing();
 };
-
-#endif // EASING_H

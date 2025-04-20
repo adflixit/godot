@@ -1,5 +1,4 @@
-#ifndef GDML_H
-#define GDML_H
+#pragma once
 
 #include "core/io/resource.h"
 #include "core/io/resource_loader.h"
@@ -85,5 +84,3 @@ public:
 	virtual void get_recognized_extensions(const Ref<Resource> &p_resource, List<String> *p_extensions) const override;
 	virtual bool recognize(const Ref<Resource> &p_resource) const override;
 };
-
-#endif // GDML_H

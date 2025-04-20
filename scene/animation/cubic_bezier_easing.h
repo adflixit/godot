@@ -1,5 +1,4 @@
-#ifndef CUBIC_BEZIER_EASING_H
-#define CUBIC_BEZIER_EASING_H
+#pragma once
 
 #include "core/math/cubic_bezier.h"
 #include "scene/animation/easing.h"
@@ -19,5 +18,3 @@ public:
 
 	CubicBezierEasing() {}
 };
-
-#endif // CUBIC_BEZIER_EASING_H

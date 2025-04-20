@@ -1,5 +1,4 @@
-#ifndef CUBIC_BEZIER_H
-#define CUBIC_BEZIER_H
+#pragma once
 
 #include "core/object/ref_counted.h"
 
@@ -54,5 +53,3 @@ public:
 
 	CubicBezier() {}
 };
-
-#endif // CUBIC_BEZIER_H

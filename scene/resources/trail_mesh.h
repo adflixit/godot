@@ -1,5 +1,4 @@
-#ifndef TRAIL_MESH_H
-#define TRAIL_MESH_H
+#pragma once
 
 #include "core/templates/local_vector.h"
 #include "scene/resources/mesh.h"
@@ -84,5 +83,3 @@ public:
 	TrailMesh();
 	~TrailMesh();
 };
-
-#endif // TRAIL_MESH_H
