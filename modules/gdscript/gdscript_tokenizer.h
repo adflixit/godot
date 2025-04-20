@@ -131,7 +131,6 @@ public:
 			SUPER,
 			TRAIT,
 			VAR,
-			LET,
 			VOID,
 			YIELD,
 			// Punctuation
