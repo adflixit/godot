@@ -72,7 +72,6 @@ real_t EquationEasing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) cons
 }
 
 void EquationEasing::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("ease", "t", "b", "c", "d"), &EquationEasing::ease);
 	ClassDB::bind_static_method("EquationEasing", D_METHOD("create", "equation"), &EquationEasing::create);
 
 	BIND_ENUM_CONSTANT(EQ_LINEAR);
@@ -154,7 +153,6 @@ real_t CallableEasing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) cons
 }
 
 void CallableEasing::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("ease", "t", "b", "c", "d"), &CallableEasing::ease);
 	ClassDB::bind_static_method("CallableEasing", D_METHOD("create", "callable"), &CallableEasing::create);
 }
 

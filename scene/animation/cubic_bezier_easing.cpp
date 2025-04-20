@@ -19,6 +19,6 @@ real_t CubicBezierEasing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) c
 }
 
 void CubicBezierEasing::_bind_methods() {
-	ClassDB::bind_static_method("CubicBezierEasing", D_METHOD("create", "x1", "y1", "x2", "y2"), &CubicBezierEasing::create);
 	ClassDB::bind_method(D_METHOD("init", "x1", "y1", "x2", "y2"), &CubicBezierEasing::init);
+	ClassDB::bind_static_method("CubicBezierEasing", D_METHOD("create", "x1", "y1", "x2", "y2"), &CubicBezierEasing::create);
 }
