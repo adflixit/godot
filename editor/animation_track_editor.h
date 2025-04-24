@@ -781,9 +781,11 @@ class AnimationTrackEditor : public VBoxContainer {
 	SpinBox *scale = nullptr;
 
 	ConfirmationDialog *ease_dialog = nullptr;
+	OptionButton *transition_selection = nullptr;
+	void _transition_selected(int p_index);
+	Label *ease_selection_label = nullptr;
 	OptionButton *ease_selection = nullptr;
-	void _ease_selection_selected(int p_index);
-	HBoxContainer *cubic_bezier_params = nullptr;
+	LineEdit *cubic_bezier_control = nullptr;
 	SpinBox *ease_fps = nullptr;
 
 	void _select_all_tracks_for_copy();
@@ -904,6 +906,29 @@ public:
 		EDIT_OPTIMIZE_ANIMATION_CONFIRM,
 		EDIT_CLEAN_UP_ANIMATION,
 		EDIT_CLEAN_UP_ANIMATION_CONFIRM
+	};
+
+	enum {
+		TRANS_LINEAR,
+		TRANS_SINE,
+		TRANS_QUINT,
+		TRANS_QUART,
+		TRANS_QUAD,
+		TRANS_EXPO,
+		TRANS_ELASTIC,
+		TRANS_CUBIC,
+		TRANS_CIRC,
+		TRANS_BOUNCE,
+		TRANS_BACK,
+		TRANS_SPRING,
+		TRANS_CUBIC_BEZIER,
+	};
+
+	enum {
+		EASE_IN,
+		EASE_OUT,
+		EASE_IN_OUT,
+		EASE_OUT_IN,
 	};
 
 	void add_track_edit_plugin(const Ref<AnimationTrackEditPlugin> &p_plugin);
