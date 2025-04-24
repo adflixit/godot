@@ -1015,7 +1015,7 @@ void AnimationPlayer::_bind_methods() {
 	ADD_GROUP("Playback Options", "playback_");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "playback_auto_capture"), "set_auto_capture", "is_auto_capture");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "playback_auto_capture_duration", PROPERTY_HINT_NONE, "suffix:s"), "set_auto_capture_duration", "get_auto_capture_duration");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "playback_auto_capture_easing", PROPERTY_HINT_RESOURCE_TYPE, "Easing"), "set_auto_capture_easing", "set_auto_capture_easing");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "playback_auto_capture_easing"), "set_auto_capture_easing", "get_auto_capture_easing");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "playback_default_blend_time", PROPERTY_HINT_RANGE, "0,4096,0.01,suffix:s"), "set_default_blend_time", "get_default_blend_time");
 
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "speed_scale", PROPERTY_HINT_RANGE, "-4,4,0.001,or_less,or_greater"), "set_speed_scale", "get_speed_scale");

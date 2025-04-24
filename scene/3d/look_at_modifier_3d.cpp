@@ -449,7 +449,7 @@ void LookAtModifier3D::_bind_methods() {
 
 	ADD_GROUP("Time Based Interpolation", "");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "duration", PROPERTY_HINT_RANGE, "0,10,0.001,or_greater,suffix:s"), "set_duration", "get_duration");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "easing", PROPERTY_HINT_RESOURCE_TYPE, "Easing"), "set_easing", "get_easing");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "easing"), "set_easing", "get_easing");
 
 	ADD_GROUP("Angle Limitation", "");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_angle_limitation"), "set_use_angle_limitation", "is_using_angle_limitation");
