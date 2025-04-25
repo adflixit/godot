@@ -553,6 +553,16 @@ Ref<PropertyTweener> PropertyTweener::set_easing(Ref<Easing> p_easing) {
 	return this;
 }
 
+Ref<PropertyTweener> PropertyTweener::set_equation(EquationEasing::Equation p_equation) {
+	easing = EquationEasing::create(p_equation);
+	return this;
+}
+
+Ref<PropertyTweener> PropertyTweener::set_callable(const Callable &p_callable) {
+	easing = CallableEasing::create(p_callable);
+	return this;
+}
+
 Ref<PropertyTweener> PropertyTweener::set_delay(double p_delay) {
 	delay = p_delay;
 	return this;
@@ -634,6 +644,8 @@ void PropertyTweener::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("from_current"), &PropertyTweener::from_current);
 	ClassDB::bind_method(D_METHOD("as_relative"), &PropertyTweener::as_relative);
 	ClassDB::bind_method(D_METHOD("ease", "easing"), &PropertyTweener::set_easing);
+	ClassDB::bind_method(D_METHOD("equation", "equation"), &PropertyTweener::set_equation);
+	ClassDB::bind_method(D_METHOD("callable", "callable"), &PropertyTweener::set_callable);
 	ClassDB::bind_method(D_METHOD("delay", "delay"), &PropertyTweener::set_delay);
 }
 
@@ -729,13 +741,23 @@ CallbackTweener::CallbackTweener() {
 	ERR_FAIL_MSG("CallbackTweener can't be created directly. Use the tween_callback() method in Tween.");
 }
 
-Ref<MethodTweener> MethodTweener::set_delay(double p_delay) {
-	delay = p_delay;
+Ref<MethodTweener> MethodTweener::set_easing(Ref<Easing> p_easing) {
+	easing = p_easing;
 	return this;
 }
 
-Ref<MethodTweener> MethodTweener::set_easing(Ref<Easing> p_easing) {
-	easing = p_easing;
+Ref<MethodTweener> MethodTweener::set_equation(EquationEasing::Equation p_equation) {
+	easing = EquationEasing::create(p_equation);
+	return this;
+}
+
+Ref<MethodTweener> MethodTweener::set_callable(const Callable &p_callable) {
+	easing = CallableEasing::create(p_callable);
+	return this;
+}
+
+Ref<MethodTweener> MethodTweener::set_delay(double p_delay) {
+	delay = p_delay;
 	return this;
 }
 
@@ -796,8 +818,10 @@ void MethodTweener::set_tween(const Ref<Tween> &p_tween) {
 }
 
 void MethodTweener::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("delay", "delay"), &MethodTweener::set_delay);
 	ClassDB::bind_method(D_METHOD("ease", "easing"), &MethodTweener::set_easing);
+	ClassDB::bind_method(D_METHOD("equation", "equation"), &MethodTweener::set_equation);
+	ClassDB::bind_method(D_METHOD("callable", "callable"), &MethodTweener::set_callable);
+	ClassDB::bind_method(D_METHOD("delay", "delay"), &MethodTweener::set_delay);
 }
 
 MethodTweener::MethodTweener(const Callable &p_callback, const Variant &p_from, const Variant &p_to, double p_duration) {

@@ -184,6 +184,8 @@ public:
 	Ref<PropertyTweener> from_current();
 	Ref<PropertyTweener> as_relative();
 	Ref<PropertyTweener> set_easing(Ref<Easing> p_easing);
+	Ref<PropertyTweener> set_equation(EquationEasing::Equation p_equation);
+	Ref<PropertyTweener> set_callable(const Callable &p_callable);
 	Ref<PropertyTweener> set_delay(double p_delay);
 
 	void set_tween(const Ref<Tween> &p_tween) override;
@@ -254,6 +256,8 @@ class MethodTweener : public Tweener {
 
 public:
 	Ref<MethodTweener> set_easing(Ref<Easing> p_easing);
+	Ref<MethodTweener> set_equation(EquationEasing::Equation p_equation);
+	Ref<MethodTweener> set_callable(const Callable &p_callable);
 	Ref<MethodTweener> set_delay(double p_delay);
 
 	void set_tween(const Ref<Tween> &p_tween) override;
