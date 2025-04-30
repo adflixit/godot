@@ -59,6 +59,33 @@ void Tweener::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("finished"));
 }
 
+static Ref<Easing> _variant_to_easing(const Variant &p_variant, const Ref<Easing> &p_fallback) {
+	switch (p_variant.get_type()) {
+		case Variant::OBJECT: {
+			Object *obj = p_variant.get_validated_object();
+			if (obj) {
+				Easing *ptr = Object::cast_to<Easing>(obj);
+				if (ptr) {
+					return Ref<Easing>(ptr);
+				} else {
+					ERR_FAIL_V_MSG(p_fallback, vformat(R"(Invalid easing object "%s".)", p_variant));
+				}
+			} else {
+				ERR_FAIL_V_MSG(p_fallback, vformat(R"(Invalid object "%s".)", p_variant));
+			}
+		} break;	
+		case Variant::INT: {
+			return EquationEasing::create(p_variant);
+		} break;
+		case Variant::CALLABLE: {
+			return CallableEasing::create(p_variant);
+		} break;
+		default: {
+			ERR_FAIL_V_MSG(p_fallback, vformat(R"(Unsupported easing initializer type "%s".)", Variant::get_type_name(p_variant.get_type())));
+		} break;
+	}
+}
+
 Ref<Easing> Tween::default_easing;
 
 void Tween::init_static() {
@@ -69,8 +96,8 @@ void Tween::free_static() {
 	default_easing.unref();
 }
 
-void Tween::set_default_easing(Ref<Easing> p_easing) {
-	default_easing = p_easing;
+void Tween::set_default_easing(const Variant &p_variant) {
+	default_easing = _variant_to_easing(p_variant, default_easing);
 }
 
 Ref<Easing> Tween::get_default_easing() {
@@ -286,18 +313,8 @@ Ref<Tween> Tween::set_speed_scale(float p_speed) {
 	return this;
 }
 
-Ref<Tween> Tween::set_easing(Ref<Easing> p_easing) {
-	easing = p_easing;
-	return this;
-}
-
-Ref<Tween> Tween::set_equation(EquationEasing::Equation p_equation) {
-	easing = EquationEasing::create(p_equation);
-	return this;
-}
-
-Ref<Tween> Tween::set_callable(const Callable &p_callable) {
-	easing = CallableEasing::create(p_callable);
+Ref<Tween> Tween::set_easing(const Variant &p_variant) {
+	easing = _variant_to_easing(p_variant, default_easing);
 	return this;
 }
 
@@ -492,15 +509,13 @@ void Tween::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("loop", "loops"), &Tween::set_loops, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_loops_left"), &Tween::get_loops_left);
 	ClassDB::bind_method(D_METHOD("set_speed_scale", "scale"), &Tween::set_speed_scale);
-	ClassDB::bind_method(D_METHOD("ease", "easing"), &Tween::set_easing);
-	ClassDB::bind_method(D_METHOD("equation", "equation"), &Tween::set_equation);
-	ClassDB::bind_method(D_METHOD("callable", "callable"), &Tween::set_callable);
+	ClassDB::bind_method(D_METHOD("ease", "variant"), &Tween::set_easing);
 
 	ClassDB::bind_method(D_METHOD("sequence"), &Tween::sequence);
 	ClassDB::bind_method(D_METHOD("parallel"), &Tween::parallel);
 
 	ClassDB::bind_static_method("Tween", D_METHOD("interpolate_value", "initial_value", "delta_value", "elapsed_time", "duration", "easing"), &Tween::interpolate_variant);
-	ClassDB::bind_static_method("Tween", D_METHOD("set_default_easing", "easing"), &Tween::set_default_easing);
+	ClassDB::bind_static_method("Tween", D_METHOD("set_default_easing", "variant"), &Tween::set_default_easing);
 	ClassDB::bind_static_method("Tween", D_METHOD("get_default_easing"), &Tween::get_default_easing);
 
 	ADD_SIGNAL(MethodInfo("step_finished", PropertyInfo(Variant::INT, "idx")));
@@ -548,18 +563,8 @@ Ref<PropertyTweener> PropertyTweener::as_relative() {
 	return this;
 }
 
-Ref<PropertyTweener> PropertyTweener::set_easing(Ref<Easing> p_easing) {
-	easing = p_easing;
-	return this;
-}
-
-Ref<PropertyTweener> PropertyTweener::set_equation(EquationEasing::Equation p_equation) {
-	easing = EquationEasing::create(p_equation);
-	return this;
-}
-
-Ref<PropertyTweener> PropertyTweener::set_callable(const Callable &p_callable) {
-	easing = CallableEasing::create(p_callable);
+Ref<PropertyTweener> PropertyTweener::set_easing(const Variant &p_easing) {
+	easing = _variant_to_easing(p_easing, easing);
 	return this;
 }
 
@@ -643,9 +648,7 @@ void PropertyTweener::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("from", "value"), &PropertyTweener::from);
 	ClassDB::bind_method(D_METHOD("from_current"), &PropertyTweener::from_current);
 	ClassDB::bind_method(D_METHOD("as_relative"), &PropertyTweener::as_relative);
-	ClassDB::bind_method(D_METHOD("ease", "easing"), &PropertyTweener::set_easing);
-	ClassDB::bind_method(D_METHOD("equation", "equation"), &PropertyTweener::set_equation);
-	ClassDB::bind_method(D_METHOD("callable", "callable"), &PropertyTweener::set_callable);
+	ClassDB::bind_method(D_METHOD("ease", "variant"), &PropertyTweener::set_easing);
 	ClassDB::bind_method(D_METHOD("delay", "delay"), &PropertyTweener::set_delay);
 }
 
@@ -741,18 +744,8 @@ CallbackTweener::CallbackTweener() {
 	ERR_FAIL_MSG("CallbackTweener can't be created directly. Use the tween_callback() method in Tween.");
 }
 
-Ref<MethodTweener> MethodTweener::set_easing(Ref<Easing> p_easing) {
-	easing = p_easing;
-	return this;
-}
-
-Ref<MethodTweener> MethodTweener::set_equation(EquationEasing::Equation p_equation) {
-	easing = EquationEasing::create(p_equation);
-	return this;
-}
-
-Ref<MethodTweener> MethodTweener::set_callable(const Callable &p_callable) {
-	easing = CallableEasing::create(p_callable);
+Ref<MethodTweener> MethodTweener::set_easing(const Variant &p_variant) {
+	easing = _variant_to_easing(p_variant, easing);
 	return this;
 }
 
@@ -809,18 +802,16 @@ bool MethodTweener::step(double &r_delta) {
 
 void MethodTweener::set_tween(const Ref<Tween> &p_tween) {
 	if (easing.is_null()) {
-		if (p_tween->get_easing().is_null()) {
-			easing = Tween::get_default_easing();
+		if (p_tween->easing.is_null()) {
+			easing = Tween::default_easing;
 		} else {
-			easing = p_tween->get_easing();
+			easing = p_tween->easing;
 		}
 	}
 }
 
 void MethodTweener::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("ease", "easing"), &MethodTweener::set_easing);
-	ClassDB::bind_method(D_METHOD("equation", "equation"), &MethodTweener::set_equation);
-	ClassDB::bind_method(D_METHOD("callable", "callable"), &MethodTweener::set_callable);
+	ClassDB::bind_method(D_METHOD("ease", "variant"), &MethodTweener::set_easing);
 	ClassDB::bind_method(D_METHOD("delay", "delay"), &MethodTweener::set_delay);
 }
 

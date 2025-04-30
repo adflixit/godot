@@ -66,6 +66,7 @@ class Tween : public RefCounted {
 	GDCLASS(Tween, RefCounted);
 
 	friend class PropertyTweener;
+	friend class MethodTweener;
 
 public:
 	enum TweenProcessMode {
@@ -118,7 +119,7 @@ public:
 	static void init_static();
 	static void free_static();
 
-	static void set_default_easing(Ref<Easing> p_easing);
+	static void set_default_easing(const Variant &p_variant);
 	static Ref<Easing> get_default_easing();
 
 	virtual String to_string() override;
@@ -151,9 +152,7 @@ public:
 	Ref<Tween> set_loops(int p_loops);
 	int get_loops_left() const;
 	Ref<Tween> set_speed_scale(float p_speed);
-	Ref<Tween> set_easing(Ref<Easing> p_easing);
-	Ref<Tween> set_equation(EquationEasing::Equation p_equation);
-	Ref<Tween> set_callable(const Callable &p_callable);
+	Ref<Tween> set_easing(const Variant &p_variant);
 	Ref<Easing> get_easing();
 
 	Ref<Tween> sequence();
@@ -181,9 +180,7 @@ public:
 	Ref<PropertyTweener> from(const Variant &p_value);
 	Ref<PropertyTweener> from_current();
 	Ref<PropertyTweener> as_relative();
-	Ref<PropertyTweener> set_easing(Ref<Easing> p_easing);
-	Ref<PropertyTweener> set_equation(EquationEasing::Equation p_equation);
-	Ref<PropertyTweener> set_callable(const Callable &p_callable);
+	Ref<PropertyTweener> set_easing(const Variant &p_variant);
 	Ref<PropertyTweener> set_delay(double p_delay);
 
 	void set_tween(const Ref<Tween> &p_tween) override;
@@ -253,9 +250,7 @@ class MethodTweener : public Tweener {
 	GDCLASS(MethodTweener, Tweener);
 
 public:
-	Ref<MethodTweener> set_easing(Ref<Easing> p_easing);
-	Ref<MethodTweener> set_equation(EquationEasing::Equation p_equation);
-	Ref<MethodTweener> set_callable(const Callable &p_callable);
+	Ref<MethodTweener> set_easing(const Variant &p_variant);
 	Ref<MethodTweener> set_delay(double p_delay);
 
 	void set_tween(const Ref<Tween> &p_tween) override;
