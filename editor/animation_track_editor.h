@@ -922,6 +922,7 @@ public:
 		TRANS_BACK,
 		TRANS_SPRING,
 		TRANS_CUBIC_BEZIER,
+		TRANS_MAX
 	};
 
 	enum {
@@ -929,6 +930,7 @@ public:
 		EASE_OUT,
 		EASE_IN_OUT,
 		EASE_OUT_IN,
+		EASE_MAX
 	};
 
 	void add_track_edit_plugin(const Ref<AnimationTrackEditPlugin> &p_plugin);
