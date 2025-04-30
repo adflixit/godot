@@ -14,7 +14,7 @@ void Easing::_bind_methods() {
 	GDVIRTUAL_BIND(_ease, "t", "b", "c", "d")
 }
 
-EquationEasing::EasingFunc EquationEasing::equations[EquationEasing::EQ_MAX] = {
+EquationEasing::EasingFunc EquationEasing::equations[EQ_MAX] = {
 	&Linear::in,
 	&Sine::in,
 	&Sine::out,
