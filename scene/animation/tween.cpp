@@ -62,16 +62,11 @@ void Tweener::_bind_methods() {
 static Ref<Easing> _variant_to_easing(const Variant &p_variant, const Ref<Easing> &p_fallback) {
 	switch (p_variant.get_type()) {
 		case Variant::OBJECT: {
-			Object *obj = p_variant.get_validated_object();
-			if (obj) {
-				Easing *ptr = Object::cast_to<Easing>(obj);
-				if (ptr) {
-					return Ref<Easing>(ptr);
-				} else {
-					ERR_FAIL_V_MSG(p_fallback, vformat(R"(Invalid easing object "%s".)", p_variant));
-				}
+			Easing *ptr = Object::cast_to<Easing>(p_variant.get_validated_object());
+			if (ptr) {
+				return Ref<Easing>(ptr);
 			} else {
-				ERR_FAIL_V_MSG(p_fallback, vformat(R"(Invalid object "%s".)", p_variant));
+				ERR_FAIL_V_MSG(p_fallback, vformat(R"(Invalid easing object "%s".)", p_variant));
 			}
 		} break;	
 		case Variant::INT: {
@@ -635,6 +630,7 @@ bool PropertyTweener::step(double &r_delta) {
 }
 
 void PropertyTweener::set_tween(const Ref<Tween> &p_tween) {
+	Tweener::set_tween(p_tween);
 	if (easing.is_null()) {
 		if (p_tween->easing.is_null()) {
 			easing = Tween::default_easing;
@@ -801,6 +797,7 @@ bool MethodTweener::step(double &r_delta) {
 }
 
 void MethodTweener::set_tween(const Ref<Tween> &p_tween) {
+	Tweener::set_tween(p_tween);
 	if (easing.is_null()) {
 		if (p_tween->easing.is_null()) {
 			easing = Tween::default_easing;
