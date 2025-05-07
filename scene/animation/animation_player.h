@@ -33,6 +33,8 @@
 #include "animation_mixer.h"
 #include "scene/resources/animation.h"
 
+class EasingData;
+
 class AnimationPlayer : public AnimationMixer {
 	GDCLASS(AnimationPlayer, AnimationMixer);
 
@@ -57,7 +59,7 @@ private:
 
 	bool auto_capture = true;
 	double auto_capture_duration = -1.0;
-	Ref<Easing> auto_capture_easing;
+	Ref<EasingData> auto_capture_easing_data;
 
 	bool is_stopping = false;
 
@@ -182,8 +184,8 @@ public:
 	bool is_auto_capture() const;
 	void set_auto_capture_duration(double p_auto_capture_duration);
 	double get_auto_capture_duration() const;
-	void set_auto_capture_easing(Ref<Easing> p_auto_capture_easing);
-	Ref<Easing> get_auto_capture_easing() const;
+	void set_auto_capture_easing_data(Ref<EasingData> p_easing_data);
+	Ref<EasingData> get_auto_capture_easing_data() const;
 
 #ifdef TOOLS_ENABLED
 	void get_argument_options(const StringName &p_function, int p_idx, List<String> *r_options) const override;

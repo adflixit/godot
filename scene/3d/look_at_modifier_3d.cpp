@@ -30,6 +30,8 @@
 
 #include "look_at_modifier_3d.h"
 
+#include "scene/resources/easing_data.h"
+
 void LookAtModifier3D::_validate_property(PropertyInfo &p_property) const {
 	SkeletonModifier3D::_validate_property(p_property);
 
@@ -222,12 +224,12 @@ float LookAtModifier3D::get_duration() const {
 	return duration;
 }
 
-void LookAtModifier3D::set_easing(Ref<Easing> p_easing) {
-	easing = p_easing;
+void LookAtModifier3D::set_easing_data(Ref<EasingData> p_easing_data) {
+	easing_data = p_easing_data;
 }
 
-Ref<Easing> LookAtModifier3D::get_easing() const {
-	return easing;
+Ref<EasingData> LookAtModifier3D::get_easing_data() const {
+	return easing_data;
 }
 
 // For angle limitation.
@@ -391,8 +393,8 @@ void LookAtModifier3D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_duration", "duration"), &LookAtModifier3D::set_duration);
 	ClassDB::bind_method(D_METHOD("get_duration"), &LookAtModifier3D::get_duration);
-	ClassDB::bind_method(D_METHOD("set_easing", "easing"), &LookAtModifier3D::set_easing);
-	ClassDB::bind_method(D_METHOD("get_easing"), &LookAtModifier3D::get_easing);
+	ClassDB::bind_method(D_METHOD("set_easing_data", "easing_data"), &LookAtModifier3D::set_easing_data);
+	ClassDB::bind_method(D_METHOD("get_easing_data"), &LookAtModifier3D::get_easing_data);
 
 	ClassDB::bind_method(D_METHOD("set_use_angle_limitation", "enabled"), &LookAtModifier3D::set_use_angle_limitation);
 	ClassDB::bind_method(D_METHOD("is_using_angle_limitation"), &LookAtModifier3D::is_using_angle_limitation);
@@ -449,7 +451,7 @@ void LookAtModifier3D::_bind_methods() {
 
 	ADD_GROUP("Time Based Interpolation", "");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "duration", PROPERTY_HINT_RANGE, "0,10,0.001,or_greater,suffix:s"), "set_duration", "get_duration");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "easing"), "set_easing", "get_easing");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "easing", PROPERTY_HINT_RESOURCE_TYPE, "EasingData"), "set_easing_data", "get_easing_data");
 
 	ADD_GROUP("Angle Limitation", "");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_angle_limitation"), "set_use_angle_limitation", "is_using_angle_limitation");
@@ -563,10 +565,10 @@ void LookAtModifier3D::_process_modification(double p_delta) {
 		if (is_flippable) {
 			// Interpolate through the rest same as AnimationTree blending for preventing to penetrate the bone into the body.
 			Quaternion rest = skeleton->get_bone_rest(bone).basis.get_rotation_quaternion();
-			float weight = Tween::run_easing(easing, 1 - remaining, 0.0, 1.0, 1.0);
+			float weight = Tween::run_easing(easing_data->get_easing(), 1 - remaining, 0.0, 1.0, 1.0);
 			destination = rest * Quaternion().slerp(rest.inverse() * from_q, 1 - weight) * Quaternion().slerp(rest.inverse() * destination, weight);
 		} else {
-			destination = from_q.slerp(destination, Tween::run_easing(easing, 1 - remaining, 0.0, 1.0, 1.0));
+			destination = from_q.slerp(destination, Tween::run_easing(easing_data->get_easing(), 1 - remaining, 0.0, 1.0, 1.0));
 		}
 	}
 

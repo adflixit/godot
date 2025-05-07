@@ -32,6 +32,7 @@
 #include "animation_player.compat.inc"
 
 #include "core/config/engine.h"
+#include "scene/resources/easing_data.h"
 
 bool AnimationPlayer::_set(const StringName &p_name, const Variant &p_value) {
 	String name = p_name;
@@ -393,7 +394,7 @@ void AnimationPlayer::play_section_backwards(const StringName &p_name, double p_
 
 void AnimationPlayer::play(const StringName &p_name, double p_custom_blend, float p_custom_scale, bool p_from_end) {
 	if (auto_capture) {
-		play_with_capture(p_name, auto_capture_duration, p_custom_blend, p_custom_scale, p_from_end, auto_capture_easing);
+		play_with_capture(p_name, auto_capture_duration, p_custom_blend, p_custom_scale, p_from_end, auto_capture_easing_data->get_easing());
 	} else {
 		_play(p_name, p_custom_blend, p_custom_scale, p_from_end);
 	}
@@ -567,9 +568,6 @@ void AnimationPlayer::_capture(const StringName &p_name, bool p_from_end, double
 	}
 	if (Math::is_zero_approx(p_duration)) {
 		return;
-	}
-	if (p_easing.is_null()) {
-		p_easing = EquationEasing::create(EquationEasing::EQ_LINEAR);
 	}
 	capture(name, p_duration, p_easing);
 }
@@ -856,12 +854,12 @@ double AnimationPlayer::get_auto_capture_duration() const {
 	return auto_capture_duration;
 }
 
-void AnimationPlayer::set_auto_capture_easing(Ref<Easing> p_easing) {
-	auto_capture_easing = p_easing;
+void AnimationPlayer::set_auto_capture_easing_data(Ref<EasingData> p_easing_data) {
+	auto_capture_easing_data = p_easing_data;
 }
 
-Ref<Easing> AnimationPlayer::get_auto_capture_easing() const {
-	return auto_capture_easing;
+Ref<EasingData> AnimationPlayer::get_auto_capture_easing_data() const {
+	return auto_capture_easing_data;
 }
 
 #ifdef TOOLS_ENABLED
@@ -958,8 +956,8 @@ void AnimationPlayer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_auto_capture"), &AnimationPlayer::is_auto_capture);
 	ClassDB::bind_method(D_METHOD("set_auto_capture_duration", "auto_capture_duration"), &AnimationPlayer::set_auto_capture_duration);
 	ClassDB::bind_method(D_METHOD("get_auto_capture_duration"), &AnimationPlayer::get_auto_capture_duration);
-	ClassDB::bind_method(D_METHOD("set_auto_capture_easing", "easing"), &AnimationPlayer::set_auto_capture_easing);
-	ClassDB::bind_method(D_METHOD("get_auto_capture_easing"), &AnimationPlayer::get_auto_capture_easing);
+	ClassDB::bind_method(D_METHOD("set_auto_capture_easing_data", "easing_data"), &AnimationPlayer::set_auto_capture_easing_data);
+	ClassDB::bind_method(D_METHOD("get_auto_capture_easing_data"), &AnimationPlayer::get_auto_capture_easing_data);
 
 	ClassDB::bind_method(D_METHOD("play", "name", "custom_blend", "custom_speed", "from_end"), &AnimationPlayer::play, DEFVAL(StringName()), DEFVAL(-1), DEFVAL(1.0), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("play_section_with_markers", "name", "start_marker", "end_marker", "custom_blend", "custom_speed", "from_end"), &AnimationPlayer::play_section_with_markers, DEFVAL(StringName()), DEFVAL(StringName()), DEFVAL(StringName()), DEFVAL(-1), DEFVAL(1.0), DEFVAL(false));
@@ -1015,7 +1013,7 @@ void AnimationPlayer::_bind_methods() {
 	ADD_GROUP("Playback Options", "playback_");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "playback_auto_capture"), "set_auto_capture", "is_auto_capture");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "playback_auto_capture_duration", PROPERTY_HINT_NONE, "suffix:s"), "set_auto_capture_duration", "get_auto_capture_duration");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "playback_auto_capture_easing"), "set_auto_capture_easing", "get_auto_capture_easing");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "playback_auto_capture_easing_data", PROPERTY_HINT_RESOURCE_TYPE, "EasingData"), "set_auto_capture_easing_data", "get_auto_capture_easing_data");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "playback_default_blend_time", PROPERTY_HINT_RANGE, "0,4096,0.01,suffix:s"), "set_default_blend_time", "get_default_blend_time");
 
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "speed_scale", PROPERTY_HINT_RANGE, "-4,4,0.001,or_less,or_greater"), "set_speed_scale", "get_speed_scale");

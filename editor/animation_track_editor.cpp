@@ -6890,24 +6890,21 @@ void AnimationTrackEditor::_edit_menu_pressed(int p_option) {
 			EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
 			undo_redo->create_action(TTR("Make Easing Keys"));
 
-			int transition_type = transition_selection->get_selected_id();
-			int ease_type = ease_selection->get_selected_id();
+			EquationEasing::TransitionType transition_type = static_cast<EquationEasing::TransitionType>(transition_selection->get_selected_id());
+			EquationEasing::EaseType ease_type = static_cast<EquationEasing::EaseType>(ease_selection->get_selected_id());
 			float fps = ease_fps->get_value();
 			double dur_step = 1.0 / fps;
 
 			Ref<Easing> easing;
 
-			switch (transition_type) {
-				case TRANS_LINEAR: {
-					easing = EquationEasing::create(EquationEasing::EQ_LINEAR);
-				} break;
+            switch (transition_type) {
 				case TRANS_CUBIC_BEZIER: {
 					Vector<double> args = cubic_bezier_control->get_text().split_floats(",");
 					easing = CubicBezierEasing::create(args[0], args[1], args[2], args[3]);
 				} break;
 				default: {
-					int equation = transition_type * 4 + ease_type - 3;
-					easing = EquationEasing::create(static_cast<EquationEasing::Equation>(equation));
+					EquationEasing::Equation equation = EquationEasing::to_equation(transition_type, ease_type);
+					easing = EquationEasing::create(equation);
 				} break;
 			}
 
@@ -8041,29 +8038,29 @@ AnimationTrackEditor::AnimationTrackEditor() {
 	ease_dialog->add_child(ease_grid);
 	transition_selection = memnew(OptionButton);
 	transition_selection->set_accessibility_name(TTRC("Transition Type"));
-	transition_selection->add_item(TTR("Linear", "Transition Type"), TRANS_LINEAR);
-	transition_selection->add_item(TTR("Sine", "Transition Type"), TRANS_SINE);
-	transition_selection->add_item(TTR("Quint", "Transition Type"), TRANS_QUINT);
-	transition_selection->add_item(TTR("Quart", "Transition Type"), TRANS_QUART);
-	transition_selection->add_item(TTR("Quad", "Transition Type"), TRANS_QUAD);
-	transition_selection->add_item(TTR("Expo", "Transition Type"), TRANS_EXPO);
-	transition_selection->add_item(TTR("Elastic", "Transition Type"), TRANS_ELASTIC);
-	transition_selection->add_item(TTR("Cubic", "Transition Type"), TRANS_CUBIC);
-	transition_selection->add_item(TTR("Circ", "Transition Type"), TRANS_CIRC);
-	transition_selection->add_item(TTR("Bounce", "Transition Type"), TRANS_BOUNCE);
-	transition_selection->add_item(TTR("Back", "Transition Type"), TRANS_BACK);
-	transition_selection->add_item(TTR("Spring", "Transition Type"), TRANS_SPRING);
+	transition_selection->add_item(TTR("Linear", "Transition Type"), EquationEasing::TRANS_LINEAR);
+	transition_selection->add_item(TTR("Sine", "Transition Type"), EquationEasing::TRANS_SINE);
+	transition_selection->add_item(TTR("Quint", "Transition Type"), EquationEasing::TRANS_QUINT);
+	transition_selection->add_item(TTR("Quart", "Transition Type"), EquationEasing::TRANS_QUART);
+	transition_selection->add_item(TTR("Quad", "Transition Type"), EquationEasing::TRANS_QUAD);
+	transition_selection->add_item(TTR("Expo", "Transition Type"), EquationEasing::TRANS_EXPO);
+	transition_selection->add_item(TTR("Elastic", "Transition Type"), EquationEasing::TRANS_ELASTIC);
+	transition_selection->add_item(TTR("Cubic", "Transition Type"), EquationEasing::TRANS_CUBIC);
+	transition_selection->add_item(TTR("Circ", "Transition Type"), EquationEasing::TRANS_CIRC);
+	transition_selection->add_item(TTR("Bounce", "Transition Type"), EquationEasing::TRANS_BOUNCE);
+	transition_selection->add_item(TTR("Back", "Transition Type"), EquationEasing::TRANS_BACK);
+	transition_selection->add_item(TTR("Spring", "Transition Type"), EquationEasing::TRANS_SPRING);
 	transition_selection->add_item(TTR("CubicBezier", "Transition Type"), TRANS_CUBIC_BEZIER);
-	transition_selection->select(TRANS_LINEAR); // Default
+	transition_selection->select(EquationEasing::TRANS_LINEAR); // Default
 	transition_selection->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED); // Translation context is needed.
 	transition_selection->connect(SceneStringName(item_selected), callable_mp(this, &AnimationTrackEditor::_transition_selected));
 	ease_selection = memnew(OptionButton);
 	ease_selection->set_accessibility_name(TTRC("Ease Type"));
-	ease_selection->add_item(TTR("In", "Ease Type"), EASE_IN);
-	ease_selection->add_item(TTR("Out", "Ease Type"), EASE_OUT);
-	ease_selection->add_item(TTR("InOut", "Ease Type"), EASE_IN_OUT);
-	ease_selection->add_item(TTR("OutIn", "Ease Type"), EASE_OUT_IN);
-	ease_selection->select(EASE_IN_OUT); // Default
+	ease_selection->add_item(TTR("In", "Ease Type"), EquationEasing::EASE_IN);
+	ease_selection->add_item(TTR("Out", "Ease Type"), EquationEasing::EASE_OUT);
+	ease_selection->add_item(TTR("InOut", "Ease Type"), EquationEasing::EASE_IN_OUT);
+	ease_selection->add_item(TTR("OutIn", "Ease Type"), EquationEasing::EASE_OUT_IN);
+	ease_selection->select(EquationEasing::EASE_IN_OUT); // Default
 	ease_selection->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED); // Translation context is needed.
 	cubic_bezier_control = memnew(LineEdit);
 	cubic_bezier_control->set_accessibility_name(TTRC("Control Points"));

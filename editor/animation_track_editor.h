@@ -34,6 +34,7 @@
 #include "editor/editor_properties.h"
 #include "editor/property_selector.h"
 #include "scene/3d/node_3d.h"
+#include "scene/animation/easing.h"
 #include "scene/gui/control.h"
 #include "scene/gui/menu_button.h"
 #include "scene/gui/scroll_bar.h"
@@ -909,28 +910,7 @@ public:
 	};
 
 	enum {
-		TRANS_LINEAR,
-		TRANS_SINE,
-		TRANS_QUINT,
-		TRANS_QUART,
-		TRANS_QUAD,
-		TRANS_EXPO,
-		TRANS_ELASTIC,
-		TRANS_CUBIC,
-		TRANS_CIRC,
-		TRANS_BOUNCE,
-		TRANS_BACK,
-		TRANS_SPRING,
-		TRANS_CUBIC_BEZIER,
-		TRANS_MAX
-	};
-
-	enum {
-		EASE_IN,
-		EASE_OUT,
-		EASE_IN_OUT,
-		EASE_OUT_IN,
-		EASE_MAX
+		TRANS_CUBIC_BEZIER = EquationEasing::TRANS_MAX,
 	};
 
 	void add_track_edit_plugin(const Ref<AnimationTrackEditPlugin> &p_plugin);
