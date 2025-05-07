@@ -121,6 +121,7 @@
 #include "scene/resources/compositor.h"
 #include "scene/resources/compressed_texture.h"
 #include "scene/resources/curve_texture.h"
+#include "scene/resources/easing_data.h"
 #include "scene/resources/environment.h"
 #include "scene/resources/external_texture.h"
 #include "scene/resources/font.h"
@@ -989,6 +990,9 @@ void register_scene_types() {
 	GDREGISTER_CLASS(PhysicsMaterial);
 #endif // !defined(PHYSICS_2D_DISABLED) || !defined(PHYSICS_3D_DISABLED)
 	GDREGISTER_CLASS(Compositor);
+	GDREGISTER_ABSTRACT_CLASS(EasingData);
+	GDREGISTER_CLASS(EquationEasingData);
+	GDREGISTER_CLASS(CubicBezierEasingData);
 	GDREGISTER_CLASS(Environment);
 	GDREGISTER_VIRTUAL_CLASS(CameraAttributes);
 	GDREGISTER_CLASS(CameraAttributesPhysical);
