@@ -2287,6 +2287,7 @@ void AnimationMixer::capture(const StringName &p_name, double p_duration, Ref<Ea
 	ERR_FAIL_COND(!active);
 	ERR_FAIL_COND(!has_animation(p_name));
 	ERR_FAIL_COND(p_duration <= 0);
+	ERR_FAIL_COND(p_easing.is_null());
 	Ref<Animation> reference_animation = get_animation(p_name);
 
 	if (!cache_valid) {
