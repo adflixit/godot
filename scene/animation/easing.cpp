@@ -67,12 +67,29 @@ Ref<EquationEasing> EquationEasing::create(Equation p_equation) {
 	return ref;
 }
 
+EquationEasing::Equation EquationEasing::to_equation(TransitionType p_trans, EaseType p_ease) {  
+	return static_cast<Equation>(CLAMP(p_trans * 4 + p_ease - 3, 0, static_cast<int>(EQ_MAX)));  
+}
+
+void EquationEasing::set_equation(Equation p_equation) {
+	equation = p_equation;
+	func = equations[equation];
+}
+
+EquationEasing::Equation EquationEasing::get_equation() const {
+	return equation;
+}
+
 real_t EquationEasing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const {
 	return func(p_t, p_b, p_c, p_d);
 }
 
 void EquationEasing::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_equation", "equation"), &EquationEasing::set_equation);
+	ClassDB::bind_method(D_METHOD("get_equation"), &EquationEasing::get_equation);
+
 	ClassDB::bind_static_method("EquationEasing", D_METHOD("create", "equation"), &EquationEasing::create);
+	ClassDB::bind_static_method("EquationEasing", D_METHOD("to_equation", "trans", "ease"), &EquationEasing::to_equation);
 
 	BIND_ENUM_CONSTANT(EQ_LINEAR);
 	BIND_ENUM_CONSTANT(EQ_SINE_IN);
@@ -119,10 +136,28 @@ void EquationEasing::_bind_methods() {
 	BIND_ENUM_CONSTANT(EQ_SPRING_OUT);
 	BIND_ENUM_CONSTANT(EQ_SPRING_IN_OUT);
 	BIND_ENUM_CONSTANT(EQ_SPRING_OUT_IN);
+
+	BIND_ENUM_CONSTANT(TRANS_LINEAR);
+	BIND_ENUM_CONSTANT(TRANS_SINE);
+	BIND_ENUM_CONSTANT(TRANS_QUINT);
+	BIND_ENUM_CONSTANT(TRANS_QUART);
+	BIND_ENUM_CONSTANT(TRANS_QUAD);
+	BIND_ENUM_CONSTANT(TRANS_EXPO);
+	BIND_ENUM_CONSTANT(TRANS_ELASTIC);
+	BIND_ENUM_CONSTANT(TRANS_CUBIC);
+	BIND_ENUM_CONSTANT(TRANS_CIRC);
+	BIND_ENUM_CONSTANT(TRANS_BOUNCE);
+	BIND_ENUM_CONSTANT(TRANS_BACK);
+	BIND_ENUM_CONSTANT(TRANS_SPRING);
+
+	BIND_ENUM_CONSTANT(EASE_IN);
+	BIND_ENUM_CONSTANT(EASE_OUT);
+	BIND_ENUM_CONSTANT(EASE_IN_OUT);
+	BIND_ENUM_CONSTANT(EASE_OUT_IN);
 }
 
 EquationEasing::EquationEasing(Equation p_equation) {
-	func = equations[p_equation];
+	set_equation(p_equation);
 }
 
 EquationEasing::EquationEasing() {

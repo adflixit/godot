@@ -71,10 +71,35 @@ public:
 		EQ_MAX
 	};
 
+	enum TransitionType {
+		TRANS_LINEAR,
+		TRANS_SINE,
+		TRANS_QUINT,
+		TRANS_QUART,
+		TRANS_QUAD,
+		TRANS_EXPO,
+		TRANS_ELASTIC,
+		TRANS_CUBIC,
+		TRANS_CIRC,
+		TRANS_BOUNCE,
+		TRANS_BACK,
+		TRANS_SPRING,
+		TRANS_MAX
+	};
+
+	enum EaseType {
+		EASE_IN,
+		EASE_OUT,
+		EASE_IN_OUT,
+		EASE_OUT_IN,
+		EASE_MAX
+	};
+
 private:
 	typedef real_t (*EasingFunc)(real_t p_t, real_t p_b, real_t p_c, real_t p_d);
 	static EasingFunc equations[EQ_MAX];
 
+	Equation equation;
 	EasingFunc func = nullptr;
 
 protected:
@@ -82,6 +107,9 @@ protected:
 
 public:
 	static Ref<EquationEasing> create(Equation p_equation);
+	static Equation to_equation(TransitionType p_trans, EaseType p_ease);
+	void set_equation(Equation p_equation);
+	Equation get_equation() const;
 	real_t ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const override;
 
 	EquationEasing(Equation p_equation);
@@ -89,6 +117,8 @@ public:
 };
 
 VARIANT_ENUM_CAST(EquationEasing::Equation);
+VARIANT_ENUM_CAST(EquationEasing::TransitionType);
+VARIANT_ENUM_CAST(EquationEasing::EaseType);
 
 class CallableEasing : public Easing {
 	GDCLASS(CallableEasing, Easing);
