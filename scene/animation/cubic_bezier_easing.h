@@ -13,6 +13,8 @@ protected:
 
 public:
 	static Ref<CubicBezierEasing> create(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2);
+	static Vector<double> parse(const String &p_string);
+
 	void init(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2);
 	real_t ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const override;
 
