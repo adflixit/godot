@@ -53,13 +53,16 @@ void EquationEasingData::_bind_methods() {
 EquationEasingData::EquationEasingData() {}
 
 void CubicBezierEasingData::_update() {
-	Vector<double> args = CubicBezierEasing::parse(control_points);
-	ERR_FAIL_COND(args.is_empty());
-	if (easing.is_null()) {
-		easing = CubicBezierEasing::create(args[0], args[1], args[2], args[3]);
-	} else {
-		Ref<CubicBezierEasing> cubic_bezier_easing = Ref<CubicBezierEasing>(easing);
-		cubic_bezier_easing->init(args[0], args[1], args[2], args[3]);
+	if (!control_points.is_empty()) {
+		Vector<double> args = control_points.split_floats(",");
+		if (args.size() < 4) {
+			if (easing.is_null()) {
+				easing = CubicBezierEasing::create(args[0], args[1], args[2], args[3]);
+			} else {
+				Ref<CubicBezierEasing> cubic_bezier_easing = Ref<CubicBezierEasing>(easing);
+				cubic_bezier_easing->init(args[0], args[1], args[2], args[3]);
+			}
+		}
 	}
 }
 
