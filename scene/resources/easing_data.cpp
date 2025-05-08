@@ -53,20 +53,22 @@ void EquationEasingData::_bind_methods() {
 EquationEasingData::EquationEasingData() {}
 
 void CubicBezierEasingData::_update() {
+	Vector<double> args = CubicBezierEasing::parse(control_points);
+	ERR_FAIL_COND(args.is_empty());
 	if (easing.is_null()) {
-		easing = CubicBezierEasing::create(control_points.x, control_points.y, control_points.z, control_points.w);
+		easing = CubicBezierEasing::create(args[0], args[1], args[2], args[3]);
 	} else {
 		Ref<CubicBezierEasing> cubic_bezier_easing = Ref<CubicBezierEasing>(easing);
-		cubic_bezier_easing->init(control_points.x, control_points.y, control_points.z, control_points.w);
+		cubic_bezier_easing->init(args[0], args[1], args[2], args[3]);
 	}
 }
 
-void CubicBezierEasingData::set_control_points(const Vector4 &p_control_points) {
+void CubicBezierEasingData::set_control_points(String p_control_points) {
 	control_points = p_control_points;
 	_update();
 }
 
-Vector4 CubicBezierEasingData::get_control_points() const {
+String CubicBezierEasingData::get_control_points() const {
 	return control_points;
 }
 
@@ -74,7 +76,7 @@ void CubicBezierEasingData::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_control_points", "control_points"), &CubicBezierEasingData::set_control_points);
 	ClassDB::bind_method(D_METHOD("get_control_points"), &CubicBezierEasingData::get_control_points);
 
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR4, "control_points", PROPERTY_HINT_NONE, ""), "set_control_points", "get_control_points");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "control_points"), "set_control_points", "get_control_points");
 }
 
 CubicBezierEasingData::CubicBezierEasingData() {}

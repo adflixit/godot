@@ -20,8 +20,8 @@ public:
 class EquationEasingData : public EasingData {
 	GDCLASS(EquationEasingData, EasingData);
 
-	EquationEasing::TransitionType transition_type;
-	EquationEasing::EaseType ease_type;
+	EquationEasing::TransitionType transition_type = EquationEasing::TRANS_LINEAR;
+	EquationEasing::EaseType ease_type = EquationEasing::EASE_IN;
 
 	void _update();
 
@@ -41,7 +41,7 @@ public:
 class CubicBezierEasingData : public EasingData {
 	GDCLASS(CubicBezierEasingData, EasingData);
 
-	Vector4 control_points;
+	String control_points;
 
 	void _update();
 
@@ -49,8 +49,8 @@ protected:
 	static void _bind_methods();
 
 public:
-	void set_control_points(const Vector4 &p_control_points);
-	Vector4 get_control_points() const;
+	void set_control_points(String p_control_points);
+	String get_control_points() const;
 
 	CubicBezierEasingData();
 };
