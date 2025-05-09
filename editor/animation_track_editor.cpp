@@ -6901,7 +6901,7 @@ void AnimationTrackEditor::_edit_menu_pressed(int p_option) {
 				case TRANS_CUBIC_BEZIER: {
 					String text = cubic_bezier_control->get_text();
 					ERR_FAIL_COND(text.is_empty());
-					Vector<double> args = cubic_bezier_control->get_text().split_floats(",");
+					Vector<double> args = text.split_floats(",");
 					ERR_FAIL_COND(args.size() < 4);
 					easing = CubicBezierEasing::create(args[0], args[1], args[2], args[3]);
 				} break;
