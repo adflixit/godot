@@ -41,7 +41,8 @@ public:
 class CubicBezierEasingData : public EasingData {
 	GDCLASS(CubicBezierEasingData, EasingData);
 
-	String control_points;
+	Vector4 control_points = Vector4(0.0, 0.0, 1.0, 1.0);
+	String control_points_text = "0.0, 0.0, 1.0, 1.0";
 
 	void _update();
 
@@ -49,8 +50,11 @@ protected:
 	static void _bind_methods();
 
 public:
-	void set_control_points(String p_control_points);
-	String get_control_points() const;
+	void set_control_points(const Vector4& p_control_points);
+	Vector4 get_control_points() const;
+
+	void set_control_points_text(String p_control_points);
+	String get_control_points_text() const;
 
 	CubicBezierEasingData();
 };
