@@ -1,5 +1,3 @@
-A Godot Engine fork for personal use.
-
 List of additions and alterations:
 * [Tween](https://github.com/adflixit/godot/blob/master/scene/animation/tween.h)
 * [Easing](https://github.com/adflixit/godot/blob/master/scene/animation/easing.h)
