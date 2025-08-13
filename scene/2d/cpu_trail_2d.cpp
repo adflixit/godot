@@ -112,14 +112,11 @@ CPUTrail2D::TrailTextureMode CPUTrail2D::get_texture_mode() const {
 }
 
 void CPUTrail2D::initialize() {
-	if (parent) {
-		tail_index = 0;
-		points_num = 1;
-		time = 0.0;
-		length = 0.0;
-		point_buffer[0].pos = parent->get_global_position();
-		point_buffer[0].exp_time = lifetime;
-	}
+	tail_index = 0;
+	points_num = 0;
+	time = 0.0;
+	next_update = 0.0;
+	length = 0.0;
 }
 
 PackedStringArray CPUTrail2D::get_configuration_warnings() const {
@@ -148,8 +145,6 @@ void CPUTrail2D::_notification(int p_what) {
 			if (gradient.is_null()) {
 				_reset_color_buffer();
 			}
-
-			initialize();
 		} break;
 
 		case NOTIFICATION_INTERNAL_PROCESS: {
@@ -188,9 +183,13 @@ void CPUTrail2D::_update_internal() {
 		next_update = time + 1.0 / max_points;
 	}
 
-	Vector2 global_pos = parent->get_global_position();
+	Vector2 global_pos = get_global_position();
 
-	if (points_num > 1 && _get_point(0).exp_time < time) {
+	if (points_num == 0) {
+		points_num++;
+		point_buffer[0].pos = global_pos;
+		point_buffer[0].exp_time = time + lifetime;
+	} else if (points_num > 1 && _get_point(0).exp_time < time) {
 		tail_index++;
 		points_num--;
 		length -= _get_point(0).pos.distance_to(_get_point(1).pos);
@@ -202,15 +201,15 @@ void CPUTrail2D::_update_internal() {
 		if (points_num == max_points) {
 			length -= _get_point(0).pos.distance_to(_get_point(1).pos);
 			tail_index++;
+		} else {
+			points_num++;
 		}
-
-		points_num++;
 
 		int index = (tail_index + points_num) % max_points;
 		point_buffer[index].pos = global_pos;
 		point_buffer[index].exp_time = time + lifetime;
 
-		length += global_pos.distance_to(_get_point(points_num - 2).pos);
+		length += global_pos.distance_to(_get_point(points_num - 1).pos);
 
 		queue_redraw();
 	}
@@ -225,17 +224,19 @@ void CPUTrail2D::_draw() {
 	const float tail_half_width = tail_width / 2.0;
 	const float head_half_width = head_width / 2.0;
 
+	Vector2 offset = _get_point(points_num - 1).pos + get_position();
+
 	float half_width = tail_half_width;
 	float distance = 0.0;
 	float uvx = 0.0;
 
-	{
-		const Point &p0 = _get_point(0);
-		const Point &p1 = _get_point(1);
+	/*{
+		Vector2 p0 = _get_point(0).pos - offset;
+		Vector2 p1 = _get_point(1).pos - offset;
 
-		Vector2 dir = (p1.pos - p0.pos).normalized();
-		Vector2 v1 = p1.pos + Vector2(dir.y, -dir.x) * half_width;
-		Vector2 v2 = p1.pos + Vector2(-dir.y, dir.x) * half_width;
+		Vector2 dir = (p1 - p0).normalized();
+		Vector2 v1 = p1 + Vector2(dir.y, -dir.x) * half_width;
+		Vector2 v2 = p1 + Vector2(-dir.y, dir.x) * half_width;
 
 		{
 			Vector2 *w = vertex_buffer.ptrw();
@@ -255,18 +256,20 @@ void CPUTrail2D::_draw() {
 			w[0] = Vector2(uvx, 0.0);
 			w[1] = Vector2(uvx, 1.0);
 		}
-	}
+	}*/
 
-	for (int i = 1; i < points_num; i++) {
-		const Point &p0 = _get_point(i - 1);
-		const Point &p1 = _get_point(i);
+	for (int i = 0; i < points_num; i++) {
+		Vector2 p0 = _get_point(i < points_num - 1 ? i : i - 1).pos - offset;
+		Vector2 p1 = _get_point(i < points_num - 1 ? i + 1 : i).pos - offset;
 
-		distance += p0.pos.distance_to(p1.pos);
+		if (i < points_num - 1) {
+			distance += p0.distance_to(p1);
+		}
 		half_width = Math::lerp(tail_half_width, head_half_width, distance / length);
 
-		Vector2 dir = (p1.pos - p0.pos).normalized();
-		Vector2 v1 = p1.pos + Vector2(dir.y, -dir.x) * half_width;
-		Vector2 v2 = p1.pos + Vector2(-dir.y, dir.x) * half_width;
+		Vector2 dir = (i < points_num - 1 ? p1 - p0 : p0 - p1).normalized();
+		Vector2 v1 = p0 + Vector2(dir.y, -dir.x) * half_width;
+		Vector2 v2 = p0 + Vector2(-dir.y, dir.x) * half_width;
 
 		const int j = i * 2;
 
@@ -295,23 +298,26 @@ void CPUTrail2D::_draw() {
 			w[j + 1] = Vector2(uvx, 1.0);
 		}
 
-		int k = (i - 1) * 6;
-		int *w = index_buffer.ptrw();
+		if (i < points_num - 1) {
+			int k = i * 6;
+			int *w = index_buffer.ptrw();
 
-		w[k++] = j - 2;
-		w[k++] = j + 1;
-		w[k++] = j - 1;
+			w[k++] = j - 2;
+			w[k++] = j + 1;
+			w[k++] = j - 1;
 
-		w[k++] = j - 2;
-		w[k++] = j;
-		w[k++] = j + 1;
+			w[k++] = j - 2;
+			w[k++] = j;
+			w[k++] = j + 1;
+		}
 	}
 
 	{
-		int offset = (points_num - 1) * 6;
+		const int last_index = (points_num - 1) * 6;
 		int *w = index_buffer.ptrw();
-		for (int i = offset + 1; i < index_buffer.size(); i++) {
-			w[i] = index_buffer[offset];
+
+		for (int i = last_index + 1; i < index_buffer.size(); i++) {
+			w[i] = index_buffer[last_index];
 		}
 	}
 
@@ -375,7 +381,6 @@ void CPUTrail2D::_bind_methods() {
 }
 
 CPUTrail2D::CPUTrail2D() {
-	set_as_top_level(true);
 }
 
 CPUTrail2D::~CPUTrail2D() {

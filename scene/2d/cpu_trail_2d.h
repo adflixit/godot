@@ -63,7 +63,10 @@ protected:
 	static void _bind_methods();
 
 private:
-	_FORCE_INLINE_ const Point &_get_point(int p_index) const { return point_buffer[(tail_index + p_index) % max_points]; }
+	_FORCE_INLINE_ const Point &_get_point(int p_index) const {
+		//WARN_PRINT(vformat("GET POINT %d %d %d", tail_index, p_index, max_points));
+		return point_buffer[(tail_index + p_index) % max_points];
+	}
 
 	void _update_buffers();
 	void _reset_color_buffer();
@@ -87,7 +90,7 @@ private:
 	bool enabled = true;
 	double lifetime = 1.0;
 	int max_points = 64;
-	float threshold = 2.0;
+	float threshold = 1.0;
 	float head_width = 10.0;
 	float tail_width = 10.0;
 	Color default_color = Color(1, 1, 1);
