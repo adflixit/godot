@@ -230,34 +230,6 @@ void CPUTrail2D::_draw() {
 	float distance = 0.0;
 	float uvx = 0.0;
 
-	/*{
-		Vector2 p0 = _get_point(0).pos - offset;
-		Vector2 p1 = _get_point(1).pos - offset;
-
-		Vector2 dir = (p1 - p0).normalized();
-		Vector2 v1 = p1 + Vector2(dir.y, -dir.x) * half_width;
-		Vector2 v2 = p1 + Vector2(-dir.y, dir.x) * half_width;
-
-		{
-			Vector2 *w = vertex_buffer.ptrw();
-			w[0] = v1;
-			w[1] = v2;
-		}
-
-		if (gradient.is_valid()) {
-			Color color = gradient->get_color(0);
-			Color *w = color_buffer.ptrw();
-			w[0] = color;
-			w[1] = color;
-		}
-
-		if (texture_mode != TRAIL_TEXTURE_NONE) {
-			Vector2 *w = uv_buffer.ptrw();
-			w[0] = Vector2(uvx, 0.0);
-			w[1] = Vector2(uvx, 1.0);
-		}
-	}*/
-
 	for (int i = 0; i < points_num; i++) {
 		Vector2 p0 = _get_point(i < points_num - 1 ? i : i - 1).pos - offset;
 		Vector2 p1 = _get_point(i < points_num - 1 ? i + 1 : i).pos - offset;
