@@ -20,10 +20,11 @@ public:
 	};
 
 	void initialize();
+
 	_FORCE_INLINE_ float get_length() const { return length; }
 
-	void set_enabled(bool p_enabled);
-	bool is_enabled() const;
+	void set_emitting(bool p_emitting);
+	bool is_emitting() const;
 
 	void set_lifetime(double p_lifetime);
 	double get_lifetime() const;
@@ -84,10 +85,10 @@ private:
 	int tail_index = 0;
 	int points_num = 0;
 	double time = 0.0;
-	double next_update = 0.0;
 	float length = 0.0;
+	//Vector2 offset;
 
-	bool enabled = true;
+	bool emitting = false;
 	double lifetime = 1.0;
 	int max_points = 64;
 	float threshold = 1.0;
