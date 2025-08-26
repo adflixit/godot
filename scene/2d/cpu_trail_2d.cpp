@@ -1,22 +1,22 @@
 #include "cpu_trail_2d.h"
 
-void CPUTrail2D::set_enabled(bool p_enabled) {
-	if (enabled == p_enabled) {
+void CPUTrail2D::set_emitting(bool p_emitting) {
+	if (emitting == p_emitting) {
 		return;
 	}
 
-	enabled = p_enabled;
+	emitting = p_emitting;
 
-	if (enabled) {
+	if (emitting) {
 		initialize();
 	}
 
-	set_process_internal(enabled && parent);
+	set_process_internal(emitting && parent);
 	queue_redraw();
 }
 
-bool CPUTrail2D::is_enabled() const {
-	return enabled;
+bool CPUTrail2D::is_emitting() const {
+	return emitting;
 }
 
 void CPUTrail2D::set_lifetime(double p_lifetime) {
@@ -115,7 +115,6 @@ void CPUTrail2D::initialize() {
 	tail_index = 0;
 	points_num = 0;
 	time = 0.0;
-	next_update = 0.0;
 	length = 0.0;
 }
 
@@ -137,7 +136,7 @@ void CPUTrail2D::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_ENTER_TREE: {
-			set_process_internal(enabled && parent);
+			set_process_internal(emitting && parent);
 
 			if (point_buffer.is_empty()) {
 				_update_buffers();
@@ -176,12 +175,6 @@ void CPUTrail2D::_update_internal() {
 	}
 
 	time += get_process_delta_time();
-
-	if (next_update > time) {
-		return;
-	} else {
-		next_update = time + 1.0 / max_points;
-	}
 
 	Vector2 global_pos = get_global_position();
 
@@ -308,6 +301,8 @@ void CPUTrail2D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_enabled", "enabled"), &CPUTrail2D::set_enabled);
 	ClassDB::bind_method(D_METHOD("is_enabled"), &CPUTrail2D::is_enabled);
+	ClassDB::bind_method(D_METHOD("set_emitting", "emitting"), &CPUTrail2D::set_emitting);
+	ClassDB::bind_method(D_METHOD("is_emitting"), &CPUTrail2D::is_emitting);
 
 	ClassDB::bind_method(D_METHOD("set_lifetime", "secs"), &CPUTrail2D::set_lifetime);
 	ClassDB::bind_method(D_METHOD("get_lifetime"), &CPUTrail2D::get_lifetime);
@@ -336,7 +331,7 @@ void CPUTrail2D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_texture_mode", "mode"), &CPUTrail2D::set_texture_mode);
 	ClassDB::bind_method(D_METHOD("get_texture_mode"), &CPUTrail2D::get_texture_mode);
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "enabled"), "set_enabled", "is_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "emitting"), "set_emitting", "is_emitting");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lifetime", PROPERTY_HINT_RANGE, "0.01,600.0,0.01,or_greater,suffix:s"), "set_lifetime", "get_lifetime");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_points", PROPERTY_HINT_RANGE, "2,256,1"), "set_max_points", "get_max_points");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "threshold", PROPERTY_HINT_NONE, "suffix:px"), "set_threshold", "get_threshold");
