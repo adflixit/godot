@@ -299,8 +299,6 @@ void CPUTrail2D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("initialize"), &CPUTrail2D::get_length);
 	ClassDB::bind_method(D_METHOD("get_length"), &CPUTrail2D::get_length);
 
-	ClassDB::bind_method(D_METHOD("set_enabled", "enabled"), &CPUTrail2D::set_enabled);
-	ClassDB::bind_method(D_METHOD("is_enabled"), &CPUTrail2D::is_enabled);
 	ClassDB::bind_method(D_METHOD("set_emitting", "emitting"), &CPUTrail2D::set_emitting);
 	ClassDB::bind_method(D_METHOD("is_emitting"), &CPUTrail2D::is_emitting);
 

@@ -86,7 +86,6 @@ private:
 	int points_num = 0;
 	double time = 0.0;
 	float length = 0.0;
-	//Vector2 offset;
 
 	bool emitting = false;
 	double lifetime = 1.0;
