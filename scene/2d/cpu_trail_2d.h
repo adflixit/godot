@@ -65,7 +65,6 @@ protected:
 
 private:
 	_FORCE_INLINE_ const Point &_get_point(int p_index) const {
-		//WARN_PRINT(vformat("GET POINT %d %d %d", tail_index, p_index, max_points));
 		return point_buffer[(tail_index + p_index) % max_points];
 	}
 
