@@ -208,7 +208,6 @@ void CPUTrail2D::_update_internal() {
 	}
 }
 
-// TODO: record the tail slope for consistency.
 void CPUTrail2D::_draw() {
 	if (points_num < 2 || head_width + tail_width <= 0.0 || tile_aspect <= 0.0) {
 		return;
@@ -217,15 +216,13 @@ void CPUTrail2D::_draw() {
 	const float tail_half_width = tail_width / 2.0;
 	const float head_half_width = head_width / 2.0;
 
-	Vector2 offset = _get_point(points_num - 1).pos + get_position();
-
 	float half_width = tail_half_width;
 	float distance = 0.0;
 	float uvx = 0.0;
 
 	for (int i = 0; i < points_num; i++) {
-		Vector2 p0 = _get_point(i < points_num - 1 ? i : i - 1).pos - offset;
-		Vector2 p1 = _get_point(i < points_num - 1 ? i + 1 : i).pos - offset;
+		Vector2 p0 = to_local(_get_point(i < points_num - 1 ? i : i - 1).pos);
+		Vector2 p1 = to_local(_get_point(i < points_num - 1 ? i + 1 : i).pos);
 
 		if (i < points_num - 1) {
 			distance += p0.distance_to(p1);
