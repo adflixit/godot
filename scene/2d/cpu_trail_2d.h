@@ -68,6 +68,9 @@ private:
 		return point_buffer[(tail_index + p_index) % max_points];
 	}
 
+	_FORCE_INLINE_ const Vector2 &_get_point_pos(int p_index) const { return _get_point(p_index).pos; }
+	_FORCE_INLINE_ double _get_point_exp(int p_index) const { return _get_point(p_index).exp_time; }
+
 	void _update_buffers();
 	void _reset_color_buffer();
 	void _update_internal();
@@ -76,9 +79,9 @@ private:
 private:
 	LocalVector<Point> point_buffer;
 	Vector<Vector2> vertex_buffer;
+	Vector<int> index_buffer;
 	Vector<Color> color_buffer;
 	Vector<Vector2> uv_buffer;
-	Vector<int> index_buffer;
 
 	Node2D *parent = nullptr;
 	int tail_index = 0;

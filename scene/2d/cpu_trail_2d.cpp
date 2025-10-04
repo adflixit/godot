@@ -159,9 +159,9 @@ void CPUTrail2D::_notification(int p_what) {
 void CPUTrail2D::_update_buffers() {
 	point_buffer.resize(max_points);
 	vertex_buffer.resize(max_points * 2);
+	index_buffer.resize((max_points - 1) * 6);
 	color_buffer.resize(max_points * 2);
 	uv_buffer.resize(max_points * 2);
-	index_buffer.resize((max_points - 1) * 6);
 }
 
 void CPUTrail2D::_reset_color_buffer() {
@@ -169,6 +169,7 @@ void CPUTrail2D::_reset_color_buffer() {
 }
 
 // TODO: evenly fill the point span in case of a sudden jump.
+// TODO: remove jitter when the parent node moves slowly.
 void CPUTrail2D::_update_internal() {
 	if (!parent) {
 		return;
@@ -179,30 +180,34 @@ void CPUTrail2D::_update_internal() {
 	Vector2 global_pos = get_global_position();
 
 	if (points_num == 0) {
-		points_num++;
 		point_buffer[0].pos = global_pos;
 		point_buffer[0].exp_time = time + lifetime;
-	} else if (points_num > 1 && _get_point(0).exp_time < time) {
+		points_num++;
+		WARN_PRINT(vformat("POINT 0 %.2f %.2f", global_pos.x, global_pos.y));
+	}
+
+	if (points_num > 1 && _get_point_exp(0) < time) {
 		tail_index++;
 		points_num--;
-		length -= _get_point(0).pos.distance_to(_get_point(1).pos);
+		length -= _get_point_pos(0).distance_to(_get_point_pos(1));
 
 		queue_redraw();
 	}
 
-	if (global_pos.distance_squared_to(_get_point(points_num - 1).pos) > threshold * threshold) {
-		if (points_num == max_points) {
-			length -= _get_point(0).pos.distance_to(_get_point(1).pos);
-			tail_index++;
-		} else {
-			points_num++;
-		}
-
+	if (global_pos.distance_squared_to(_get_point_pos(points_num - 1)) > threshold * threshold) {
 		int index = (tail_index + points_num) % max_points;
 		point_buffer[index].pos = global_pos;
 		point_buffer[index].exp_time = time + lifetime;
 
-		length += global_pos.distance_to(_get_point(points_num - 1).pos);
+		WARN_PRINT(vformat("POINT %d %.2f %.2f", points_num, global_pos.x, global_pos.y));
+
+		if (points_num == max_points) {
+			length -= _get_point_pos(0).distance_to(_get_point_pos(1));
+			tail_index++;
+		} else {
+			length += global_pos.distance_to(_get_point_pos(points_num - 1));
+			points_num++;
+		}
 
 		queue_redraw();
 	}
@@ -221,8 +226,8 @@ void CPUTrail2D::_draw() {
 	float uvx = 0.0;
 
 	for (int i = 0; i < points_num; i++) {
-		Vector2 p0 = to_local(_get_point(i < points_num - 1 ? i : i - 1).pos);
-		Vector2 p1 = to_local(_get_point(i < points_num - 1 ? i + 1 : i).pos);
+		Vector2 p0 = to_local(_get_point_pos(i < points_num - 1 ? i : i - 1));
+		Vector2 p1 = to_local(_get_point_pos(i < points_num - 1 ? i + 1 : i));
 
 		if (i < points_num - 1) {
 			distance += p0.distance_to(p1);
@@ -241,6 +246,19 @@ void CPUTrail2D::_draw() {
 			w[j + 1] = v2;
 		}
 
+		if (i < points_num - 1) {
+			int k = i * 6;
+			int *w = index_buffer.ptrw();
+
+			w[k++] = j;
+			w[k++] = j + 3;
+			w[k++] = j + 1;
+
+			w[k++] = j;
+			w[k++] = j + 2;
+			w[k++] = j + 3;
+		}
+
 		if (gradient.is_valid()) {
 			Color color = gradient->get_color_at_offset(distance / length);
 			Color *w = color_buffer.ptrw();
@@ -248,33 +266,22 @@ void CPUTrail2D::_draw() {
 			w[j + 1] = color;
 		}
 
-		if (texture_mode == TRAIL_TEXTURE_TILE) {
-			uvx = distance / (half_width * 2.0 * tile_aspect);
-		} else if (texture_mode == TRAIL_TEXTURE_STRETCH) {
-			uvx = distance / length;
-		}
-
 		if (texture_mode != TRAIL_TEXTURE_NONE) {
+			if (texture_mode == TRAIL_TEXTURE_TILE) {
+				uvx = distance / (half_width * 2.0 * tile_aspect);
+			} else if (texture_mode == TRAIL_TEXTURE_STRETCH) {
+				uvx = distance / length;
+			}
+
 			Vector2 *w = uv_buffer.ptrw();
 			w[j] = Vector2(uvx, 0.0);
 			w[j + 1] = Vector2(uvx, 1.0);
 		}
 
-		if (i < points_num - 1) {
-			int k = i * 6;
-			int *w = index_buffer.ptrw();
-
-			w[k++] = j - 2;
-			w[k++] = j + 1;
-			w[k++] = j - 1;
-
-			w[k++] = j - 2;
-			w[k++] = j;
-			w[k++] = j + 1;
-		}
+		//WARN_PRINT(vformat("%d %.2f %.2f", i, to_global(p0).x, to_global(p0).y));
 	}
 
-	{
+	if (points_num < max_points) {
 		const int last_index = (points_num - 1) * 6;
 		int *w = index_buffer.ptrw();
 
