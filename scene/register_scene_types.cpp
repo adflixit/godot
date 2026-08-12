@@ -44,6 +44,9 @@
 #include "scene/animation/animation_node_state_machine.h"
 #include "scene/animation/animation_player.h"
 #include "scene/animation/animation_tree.h"
+#include "scene/animation/callable_easing.h"
+#include "scene/animation/cubic_bezier_easing.h"
+#include "scene/animation/equation_easing.h"
 #include "scene/animation/tween.h"
 #include "scene/audio/audio_stream_player.h"
 #include "scene/debugger/scene_debugger.h"
@@ -581,6 +584,11 @@ void register_scene_types() {
 	Window::set_root_layout_direction(root_dir);
 
 	/* REGISTER ANIMATION */
+	GDREGISTER_VIRTUAL_CLASS(Easing);
+	GDREGISTER_CLASS(EquationEasing);
+	GDREGISTER_CLASS(CallableEasing);
+	GDREGISTER_CLASS(CubicBezierEasing);
+
 	GDREGISTER_CLASS(Tween);
 	GDREGISTER_ABSTRACT_CLASS(Tweener);
 	GDREGISTER_CLASS(PropertyTweener);
@@ -979,6 +987,9 @@ void register_scene_types() {
 
 	GDREGISTER_CLASS(Animation);
 	GDREGISTER_CLASS(AnimationLibrary);
+	GDREGISTER_CLASS(EasingData);
+	GDREGISTER_CLASS(EquationEasingData);
+	GDREGISTER_CLASS(CubicBezierEasingData);
 
 	GDREGISTER_ABSTRACT_CLASS(Font);
 	GDREGISTER_CLASS(FontFile);
