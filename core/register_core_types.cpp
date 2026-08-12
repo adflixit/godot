@@ -73,6 +73,7 @@
 #include "core/io/xml_parser.h"
 #include "core/math/a_star.h"
 #include "core/math/a_star_grid_2d.h"
+#include "core/math/cubic_bezier.h"
 #include "core/math/expression.h"
 #include "core/math/random_number_generator.h"
 #include "core/math/triangle_mesh.h"
@@ -86,7 +87,6 @@
 #include "core/os/time.h"
 #include "core/string/fuzzy_search.h"
 #include "core/string/optimized_translation.h"
-#include "core/string/regex.h"
 #include "core/string/translation.h"
 #include "core/string/translation_server.h"
 #ifndef DISABLE_DEPRECATED
@@ -147,7 +147,7 @@ void register_core_types() {
 
 	GDREGISTER_CLASS(Object);
 	GDREGISTER_CLASS(RefCounted);
-	GDREGISTER_CLASS(CoreBind::WeakRef);
+	GDREGISTER_CLASS(WeakRef);
 	GDREGISTER_CLASS(Resource);
 
 	GDREGISTER_CLASS(Time);
@@ -276,8 +276,6 @@ void register_core_types() {
 
 	GDREGISTER_CLASS(XMLParser);
 	GDREGISTER_CLASS(JSON);
-	GDREGISTER_CLASS(RegExMatch);
-	GDREGISTER_CLASS(RegEx);
 
 	GDREGISTER_CLASS(ConfigFile);
 
@@ -286,6 +284,7 @@ void register_core_types() {
 	GDREGISTER_CLASS(AStar3D);
 	GDREGISTER_CLASS(AStar2D);
 	GDREGISTER_CLASS(AStarGrid2D);
+	GDREGISTER_CLASS(CubicBezier);
 	GDREGISTER_CLASS(EncodedObjectAsID);
 	GDREGISTER_CLASS(RandomNumberGenerator);
 #ifndef DISABLE_DEPRECATED
