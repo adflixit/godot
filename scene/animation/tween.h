@@ -30,8 +30,7 @@
 
 #pragma once
 
-#include "core/object/ref_counted.h"
-#include "core/variant/type_info.h"
+#include "scene/animation/easing.h"
 
 class Tween;
 class Node;
@@ -81,35 +80,10 @@ public:
 		TWEEN_PAUSE_PROCESS,
 	};
 
-	enum TransitionType {
-		TRANS_LINEAR,
-		TRANS_SINE,
-		TRANS_QUINT,
-		TRANS_QUART,
-		TRANS_QUAD,
-		TRANS_EXPO,
-		TRANS_ELASTIC,
-		TRANS_CUBIC,
-		TRANS_CIRC,
-		TRANS_BOUNCE,
-		TRANS_BACK,
-		TRANS_SPRING,
-		TRANS_MAX
-	};
-
-	enum EaseType {
-		EASE_IN,
-		EASE_OUT,
-		EASE_IN_OUT,
-		EASE_OUT_IN,
-		EASE_MAX
-	};
-
 private:
 	TweenProcessMode process_mode = TweenProcessMode::TWEEN_PROCESS_IDLE;
 	TweenPauseMode pause_mode = TweenPauseMode::TWEEN_PAUSE_BOUND;
-	TransitionType default_transition = TransitionType::TRANS_LINEAR;
-	EaseType default_ease = EaseType::EASE_IN_OUT;
+	Ref<Easing> easing;
 	ObjectID bound_node;
 
 	SceneTree *parent_tree = nullptr;
@@ -128,29 +102,34 @@ private:
 	bool in_step = false;
 	bool dead = false;
 	bool valid = false;
-	bool default_parallel = false;
-	bool parallel_enabled = false;
+	bool sequential = true;
+	bool last_parallel = false;
 #ifdef DEBUG_ENABLED
 	bool is_infinite = false;
 #endif
 
-	typedef real_t (*interpolater)(real_t t, real_t b, real_t c, real_t d);
-	static interpolater interpolaters[TRANS_MAX][EASE_MAX];
+	static Ref<Easing> default_easing;
 
 	void _start_tweeners();
 	void _stop_internal(bool p_reset);
 
 protected:
 	static void _bind_methods();
-	virtual String _to_string() override;
+	virtual String to_string() override;
 
 public:
-	RequiredResult<PropertyTweener> tween_property(RequiredParam<const Object> rp_target, const NodePath &p_property, Variant p_to, double p_duration);
-	RequiredResult<IntervalTweener> tween_interval(double p_time);
-	RequiredResult<CallbackTweener> tween_callback(const Callable &p_callback);
-	RequiredResult<MethodTweener> tween_method(const Callable &p_callback, const Variant p_from, Variant p_to, double p_duration);
-	RequiredResult<SubtweenTweener> tween_subtween(RequiredParam<Tween> rp_subtween);
-	RequiredResult<AwaitTweener> tween_await(const Signal &p_signal);
+	static void init_static();
+	static void free_static();
+
+	static void set_default_easing(const Variant &p_variant);
+	static Ref<Easing> get_default_easing();
+
+	Ref<PropertyTweener> property(const Object *p_target, const NodePath &p_property, Variant p_to, double p_duration);
+	Ref<IntervalTweener> interval(double p_duration);
+	Ref<CallbackTweener> callback(const Callable &p_callback);
+	Ref<MethodTweener> method(const Callable &p_callback, const Variant p_from, Variant p_to, double p_duration);
+	Ref<SubtweenTweener> subtween(const Ref<Tween> &p_subtween);
+	Ref<AwaitTweener> await(const Signal &p_signal);
 	void append(Ref<Tweener> p_tweener);
 
 	bool custom_step(double p_delta);
@@ -164,28 +143,25 @@ public:
 	bool is_valid();
 	void clear();
 
-	RequiredResult<Tween> bind_node(RequiredParam<const Node> rp_node);
-	RequiredResult<Tween> set_process_mode(TweenProcessMode p_mode);
+	Ref<Tween> bind_node(const Node *p_node);
+	Ref<Tween> set_process_mode(TweenProcessMode p_mode);
 	TweenProcessMode get_process_mode() const;
-	RequiredResult<Tween> set_pause_mode(TweenPauseMode p_mode);
+	Ref<Tween> set_pause_mode(TweenPauseMode p_mode);
 	TweenPauseMode get_pause_mode() const;
-	RequiredResult<Tween> set_ignore_time_scale(bool p_ignore = true);
+	Ref<Tween> set_ignore_time_scale(bool p_ignore = true);
 	bool is_ignoring_time_scale() const;
 
-	RequiredResult<Tween> set_parallel(bool p_parallel);
-	RequiredResult<Tween> set_loops(int p_loops);
+	Ref<Tween> loop(int p_loops);
 	int get_loops_left() const;
-	RequiredResult<Tween> set_speed_scale(float p_speed);
-	RequiredResult<Tween> set_trans(TransitionType p_trans);
-	TransitionType get_trans() const;
-	RequiredResult<Tween> set_ease(EaseType p_ease);
-	EaseType get_ease() const;
+	Ref<Tween> set_speed_scale(float p_speed);
+	Ref<Tween> ease(const Variant &p_variant);
+	Ref<Easing> get_easing();
 
-	RequiredResult<Tween> parallel();
-	RequiredResult<Tween> chain();
+	Ref<Tween> sequence();
+	Ref<Tween> parallel();
 
-	static real_t run_equation(TransitionType p_trans_type, EaseType p_ease_type, real_t t, real_t b, real_t c, real_t d);
-	static Variant interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, Tween::TransitionType p_trans, Tween::EaseType p_ease);
+	static real_t eval_easing(const Ref<Easing> &p_easing, real_t t, real_t b, real_t c, real_t d);
+	static Variant interpolate_variant(const Variant &p_initial_val, const Variant &p_delta_val, double p_time, double p_duration, const Ref<Easing> &p_easing);
 
 	bool step(double p_delta);
 	bool can_process(bool p_tree_paused) const;
@@ -198,22 +174,16 @@ public:
 
 VARIANT_ENUM_CAST(Tween::TweenPauseMode);
 VARIANT_ENUM_CAST(Tween::TweenProcessMode);
-VARIANT_ENUM_CAST(Tween::TransitionType);
-VARIANT_ENUM_CAST(Tween::EaseType);
 
 class PropertyTweener : public Tweener {
 	GDCLASS(PropertyTweener, Tweener);
 
-	double _get_custom_interpolated_value(const Variant &p_value);
-
 public:
-	RequiredResult<PropertyTweener> from(const Variant &p_value);
-	RequiredResult<PropertyTweener> from_current();
-	RequiredResult<PropertyTweener> as_relative();
-	RequiredResult<PropertyTweener> set_trans(Tween::TransitionType p_trans);
-	RequiredResult<PropertyTweener> set_ease(Tween::EaseType p_ease);
-	RequiredResult<PropertyTweener> set_custom_interpolator(const Callable &p_method);
-	RequiredResult<PropertyTweener> set_delay(double p_delay);
+	Ref<PropertyTweener> from(const Variant &p_value);
+	Ref<PropertyTweener> from_current();
+	Ref<PropertyTweener> as_relative();
+	Ref<PropertyTweener> ease(const Variant &p_variant);
+	Ref<PropertyTweener> delay(double p_duration);
 
 	void set_tween(const Ref<Tween> &p_tween) override;
 	void start() override;
@@ -236,11 +206,9 @@ private:
 	Ref<RefCounted> ref_copy; // Makes sure that RefCounted objects are not freed too early.
 
 	double duration = 0;
-	Tween::TransitionType trans_type = Tween::TRANS_MAX; // This is set inside set_tween();
-	Tween::EaseType ease_type = Tween::EASE_MAX;
-	Callable custom_method;
+	Ref<Easing> easing;
 
-	double delay = 0;
+	double delay_duration = 0;
 	bool do_continue = true;
 	bool do_continue_delayed = false;
 	bool relative = false;
@@ -252,7 +220,7 @@ class IntervalTweener : public Tweener {
 public:
 	bool step(double &r_delta) override;
 
-	IntervalTweener(double p_time);
+	IntervalTweener(double p_duration);
 	IntervalTweener();
 
 private:
@@ -263,7 +231,7 @@ class CallbackTweener : public Tweener {
 	GDCLASS(CallbackTweener, Tweener);
 
 public:
-	RequiredResult<CallbackTweener> set_delay(double p_delay);
+	Ref<CallbackTweener> delay(double p_duration);
 
 	bool step(double &r_delta) override;
 
@@ -275,7 +243,7 @@ protected:
 
 private:
 	Callable callback;
-	double delay = 0;
+	double delay_duration = 0;
 
 	Ref<RefCounted> ref_copy;
 };
@@ -284,9 +252,8 @@ class MethodTweener : public Tweener {
 	GDCLASS(MethodTweener, Tweener);
 
 public:
-	RequiredResult<MethodTweener> set_trans(Tween::TransitionType p_trans);
-	RequiredResult<MethodTweener> set_ease(Tween::EaseType p_ease);
-	RequiredResult<MethodTweener> set_delay(double p_delay);
+	Ref<MethodTweener> ease(const Variant &p_variant);
+	Ref<MethodTweener> delay(double p_duration);
 
 	void set_tween(const Ref<Tween> &p_tween) override;
 	bool step(double &r_delta) override;
@@ -299,9 +266,8 @@ protected:
 
 private:
 	double duration = 0;
-	double delay = 0;
-	Tween::TransitionType trans_type = Tween::TRANS_MAX;
-	Tween::EaseType ease_type = Tween::EASE_MAX;
+	double delay_duration = 0;
+	Ref<Easing> easing;
 
 	Variant initial_val;
 	Variant delta_val;
@@ -319,7 +285,7 @@ public:
 	void start() override;
 	bool step(double &r_delta) override;
 
-	RequiredResult<SubtweenTweener> set_delay(double p_delay);
+	Ref<SubtweenTweener> delay(double p_duration);
 
 	SubtweenTweener(const Ref<Tween> &p_subtween);
 	SubtweenTweener();
@@ -328,7 +294,34 @@ protected:
 	static void _bind_methods();
 
 private:
-	double delay = 0;
+	double delay_duration = 0;
+};
+
+class AwaitTweener : public Tweener {
+	GDCLASS(AwaitTweener, Tweener);
+
+public:
+	Ref<AwaitTweener> timeout(double p_duration);
+
+	void start() override;
+	bool step(double &r_delta) override;
+
+	AwaitTweener(const Signal &p_signal);
+	AwaitTweener();
+
+protected:
+	static void _bind_methods();
+
+private:
+	Signal signal;
+	Callable target_callable;
+	bool received = false;
+
+	double timeout_duration = -1;
+
+	void _signal_received(const Variant **p_args, int p_argcount, Callable::CallError &r_error);
+
+	Ref<RefCounted> ref_copy;
 };
 
 class AwaitTweener : public Tweener {

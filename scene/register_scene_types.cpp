@@ -1319,6 +1319,7 @@ void register_scene_types() {
 		GraphEdit::init_shaders();
 	}
 
+	Tween::init_static();
 	SceneDebugger::initialize();
 
 	OS::get_singleton()->benchmark_end_measure("Scene", "Register Types");
@@ -1328,6 +1329,7 @@ void unregister_scene_types() {
 	OS::get_singleton()->benchmark_begin_measure("Scene", "Unregister Types");
 
 	SceneDebugger::deinitialize();
+	Tween::free_static();
 
 	if constexpr (GD_IS_CLASS_ENABLED(TextureLayered)) {
 		ResourceLoader::remove_resource_format_loader(resource_loader_texture_layered);
