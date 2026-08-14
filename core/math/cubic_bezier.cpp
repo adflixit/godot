@@ -2,6 +2,8 @@
 
 #include "cubic_bezier.h"
 
+#include "core/object/class_db.h"
+
 void CubicBezier::_init_coefficients(real_t p_x1, real_t p_y1, real_t p_x2, real_t p_y2) {
 	cx = 3.0 * p_x1;
 	bx = 3.0 * (p_x2 - p_x1) - cx;
