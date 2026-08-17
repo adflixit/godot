@@ -35,6 +35,7 @@
 #include "editor/inspector/editor_properties.h"
 #include "editor/inspector/property_selector.h"
 #include "scene/3d/node_3d.h"
+#include "scene/animation/equation_easing.h"
 #include "scene/gui/control.h"
 #include "scene/gui/menu_button.h"
 #include "scene/gui/scroll_bar.h"
@@ -825,7 +826,10 @@ class AnimationTrackEditor : public VBoxContainer {
 
 	ConfirmationDialog *ease_dialog = nullptr;
 	OptionButton *transition_selection = nullptr;
+	void _transition_selected(int p_index);
+	Label *ease_selection_label = nullptr;
 	OptionButton *ease_selection = nullptr;
+	LineEdit *cubic_bezier_control = nullptr;
 	SpinBox *ease_fps = nullptr;
 
 	void _select_all_tracks_for_copy();
@@ -952,6 +956,10 @@ public:
 		EDIT_CLEAN_UP_ANIMATION_CONFIRM,
 		EDIT_GOTO_NEXT_KEYFRAME,
 		EDIT_GOTO_PREV_KEYFRAME,
+	};
+
+	enum {
+		TRANS_CUBIC_BEZIER = EquationEasing::TRANS_MAX,
 	};
 
 	void add_track_edit_plugin(const Ref<AnimationTrackEditPlugin> &p_plugin);
