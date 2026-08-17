@@ -33,6 +33,7 @@
 #include "core/config/engine.h"
 #include "core/object/class_db.h"
 #include "scene/resources/animation.h"
+#include "scene/resources/easing_data.h"
 
 void LookAtModifier3D::_validate_property(PropertyInfo &p_property) const {
 	if (Engine::get_singleton()->is_editor_hint() && (p_property.name == "bone_name" || p_property.name == "origin_bone_name")) {
@@ -254,20 +255,12 @@ float LookAtModifier3D::get_duration() const {
 	return duration;
 }
 
-void LookAtModifier3D::set_transition_type(Tween::TransitionType p_transition_type) {
-	transition_type = p_transition_type;
+void LookAtModifier3D::set_easing_data(Ref<EasingData> p_easing_data) {
+	easing_data = p_easing_data;
 }
 
-Tween::TransitionType LookAtModifier3D::get_transition_type() const {
-	return transition_type;
-}
-
-void LookAtModifier3D::set_ease_type(Tween::EaseType p_ease_type) {
-	ease_type = p_ease_type;
-}
-
-Tween::EaseType LookAtModifier3D::get_ease_type() const {
-	return ease_type;
+Ref<EasingData> LookAtModifier3D::get_easing_data() const {
+	return easing_data;
 }
 
 // For angle limitation.
@@ -441,10 +434,8 @@ void LookAtModifier3D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_duration", "duration"), &LookAtModifier3D::set_duration);
 	ClassDB::bind_method(D_METHOD("get_duration"), &LookAtModifier3D::get_duration);
-	ClassDB::bind_method(D_METHOD("set_transition_type", "transition_type"), &LookAtModifier3D::set_transition_type);
-	ClassDB::bind_method(D_METHOD("get_transition_type"), &LookAtModifier3D::get_transition_type);
-	ClassDB::bind_method(D_METHOD("set_ease_type", "ease_type"), &LookAtModifier3D::set_ease_type);
-	ClassDB::bind_method(D_METHOD("get_ease_type"), &LookAtModifier3D::get_ease_type);
+	ClassDB::bind_method(D_METHOD("set_easing_data", "easing_data"), &LookAtModifier3D::set_easing_data);
+	ClassDB::bind_method(D_METHOD("get_easing_data"), &LookAtModifier3D::get_easing_data);
 
 	ClassDB::bind_method(D_METHOD("set_use_angle_limitation", "enabled"), &LookAtModifier3D::set_use_angle_limitation);
 	ClassDB::bind_method(D_METHOD("is_using_angle_limitation"), &LookAtModifier3D::is_using_angle_limitation);
@@ -504,8 +495,7 @@ void LookAtModifier3D::_bind_methods() {
 
 	ADD_GROUP("Time Based Interpolation", "");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "duration", PROPERTY_HINT_RANGE, "0,10,0.001,or_greater,suffix:s"), "set_duration", "get_duration");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "transition_type", PROPERTY_HINT_ENUM, "Linear,Sine,Quint,Quart,Quad,Expo,Elastic,Cubic,Circ,Bounce,Back,Spring"), "set_transition_type", "get_transition_type");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "ease_type", PROPERTY_HINT_ENUM, "In,Out,InOut,OutIn"), "set_ease_type", "get_ease_type");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "easing_data", PROPERTY_HINT_RESOURCE_TYPE, "EasingData"), "set_easing_data", "get_easing_data");
 
 	ADD_GROUP("Angle Limitation", "");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_angle_limitation"), "set_use_angle_limitation", "is_using_angle_limitation");
@@ -633,10 +623,10 @@ void LookAtModifier3D::_process_modification(double p_delta) {
 		if (is_flippable) {
 			// Interpolate through the rest same as AnimationTree blending for preventing to penetrate the bone into the body.
 			Quaternion rest = interpolation_rest;
-			float weight = Tween::run_equation(transition_type, ease_type, 1 - remaining, 0.0, 1.0, 1.0);
+			float weight = Tween::eval_easing(easing_data->get_easing(), 1 - remaining, 0.0, 1.0, 1.0);
 			destination = Animation::interpolate_via_rest(Animation::interpolate_via_rest(rest, from, 1 - weight, rest), destination, weight, rest);
 		} else {
-			destination = from.slerp(destination, Tween::run_equation(transition_type, ease_type, 1 - remaining, 0.0, 1.0, 1.0));
+			destination = from_q.slerp(destination, Tween::eval_easing(easing_data->get_easing(), 1 - remaining, 0.0, 1.0, 1.0));
 		}
 	}
 

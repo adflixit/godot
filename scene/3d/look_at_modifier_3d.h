@@ -33,6 +33,8 @@
 #include "scene/3d/skeleton_modifier_3d.h"
 #include "scene/animation/tween.h"
 
+class EasingData;
+
 class LookAtModifier3D : public SkeletonModifier3D {
 	GDCLASS(LookAtModifier3D, SkeletonModifier3D);
 
@@ -66,8 +68,7 @@ private:
 	NodePath target_node;
 
 	float duration = 0;
-	Tween::TransitionType transition_type = Tween::TRANS_LINEAR;
-	Tween::EaseType ease_type = Tween::EASE_IN;
+	Ref<EasingData> easing_data;
 
 	bool use_angle_limitation = false;
 	bool symmetry_limitation = true;
@@ -149,10 +150,8 @@ public:
 
 	void set_duration(float p_duration);
 	float get_duration() const;
-	void set_transition_type(Tween::TransitionType p_transition_type);
-	Tween::TransitionType get_transition_type() const;
-	void set_ease_type(Tween::EaseType p_ease_type);
-	Tween::EaseType get_ease_type() const;
+	void set_easing_data(Ref<EasingData> p_easing_data);
+	Ref<EasingData> get_easing_data() const;
 
 	void set_use_angle_limitation(bool p_enabled);
 	bool is_using_angle_limitation() const;
