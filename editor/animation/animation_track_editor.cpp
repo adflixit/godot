@@ -5662,7 +5662,7 @@ void AnimationTrackEditor::_notification(int p_what) {
 			transition_selection->set_item_text(transition_selection->get_item_index(EquationEasing::TRANS_BOUNCE), TTR("Bounce", "Transition Type"));
 			transition_selection->set_item_text(transition_selection->get_item_index(EquationEasing::TRANS_BACK), TTR("Back", "Transition Type"));
 			transition_selection->set_item_text(transition_selection->get_item_index(EquationEasing::TRANS_SPRING), TTR("Spring", "Transition Type"));
-			transition_selection->set_item_text(transition_selection->get_item_index(TRANS_CUBIC_BEZIER), TTR("Cublic Bezier", "Transition Type"));
+			transition_selection->set_item_text(transition_selection->get_item_index(TRANS_CUBIC_BEZIER), TTR("Cubic Bezier", "Transition Type"));
 
 			ease_selection->set_item_text(ease_selection->get_item_index(EquationEasing::EASE_IN), TTR("Ease In", "Ease Type"));
 			ease_selection->set_item_text(ease_selection->get_item_index(EquationEasing::EASE_OUT), TTR("Ease Out", "Ease Type"));
