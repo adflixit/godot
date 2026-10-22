@@ -323,30 +323,3 @@ private:
 
 	Ref<RefCounted> ref_copy;
 };
-
-class AwaitTweener : public Tweener {
-	GDCLASS(AwaitTweener, Tweener);
-
-public:
-	Ref<AwaitTweener> set_timeout(double p_timeout);
-
-	void start() override;
-	bool step(double &r_delta) override;
-
-	AwaitTweener(const Signal &p_signal);
-	AwaitTweener();
-
-protected:
-	static void _bind_methods();
-
-private:
-	Signal signal;
-	Callable target_callable;
-	bool received = false;
-
-	double timeout = -1;
-
-	void _signal_received(const Variant **p_args, int p_argcount, Callable::CallError &r_error);
-
-	Ref<RefCounted> ref_copy;
-};
