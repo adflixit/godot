@@ -1,5 +1,7 @@
 #include "easing.h"
 
+#include "core/math/cubic_bezier.h"
+
 real_t Easing::ease(real_t p_t, real_t p_b, real_t p_c, real_t p_d) const {
 	real_t ret = 0.0;
 	GDVIRTUAL_CALL(_ease, p_t, p_b, p_c, p_d, ret);
