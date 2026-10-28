@@ -1,7 +1,7 @@
 #pragma once
 
+#include "core/object/gdvirtual.gen.h"
 #include "core/object/ref_counted.h"
-#include "core/object/gdvirtual.gen.inc"
 
 class Easing : public RefCounted {
 	GDCLASS(Easing, RefCounted);
