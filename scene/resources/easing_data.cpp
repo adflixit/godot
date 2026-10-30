@@ -16,7 +16,7 @@ void EasingData::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_easing"), &EasingData::get_easing);
 }
 
-void EquationEasingData::_update() {
+void EquationEasingData::_update_easing() {
 	Ref<Easing> easing = get_easing();
 	EquationEasing::Equation equation = EquationEasing::to_equation(transition_type, ease_type);
 
@@ -24,13 +24,14 @@ void EquationEasingData::_update() {
 		set_easing(EquationEasing::create(equation));
 	} else {
 		Ref<EquationEasing> equation_easing = Ref<EquationEasing>(easing);
+		ERR_FAIL_NULL_MSG(equation_easing, vformat("(Invalid easing object type. Expected EquationEasing, got %s.)", easing->get_class()));
 		equation_easing->set_equation(equation);
 	}
 }
 
 void EquationEasingData::set_transition_type(EquationEasing::TransitionType p_transition_type) {
 	transition_type = p_transition_type;
-	_update();
+	_update_easing();
 }
 
 EquationEasing::TransitionType EquationEasingData::get_transition_type() const {
@@ -39,7 +40,7 @@ EquationEasing::TransitionType EquationEasingData::get_transition_type() const {
 
 void EquationEasingData::set_ease_type(EquationEasing::EaseType p_ease_type) {
 	ease_type = p_ease_type;
-	_update();
+	_update_easing();
 }
 
 EquationEasing::EaseType EquationEasingData::get_ease_type() const {
@@ -56,7 +57,7 @@ void EquationEasingData::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "ease_type", PROPERTY_HINT_ENUM, "In,Out,InOut,OutIn"), "set_ease_type", "get_ease_type");
 }
 
-void CubicBezierEasingData::_update() {
+void CubicBezierEasingData::_update_easing() {
 	Ref<Easing> easing = get_easing();
 	real_t *args = control_points.coord;
 	
@@ -64,6 +65,7 @@ void CubicBezierEasingData::_update() {
 		set_easing(CubicBezierEasing::create(args[0], args[1], args[2], args[3]));
 	} else {
 		Ref<CubicBezierEasing> cubic_bezier_easing = Ref<CubicBezierEasing>(easing);
+		ERR_FAIL_NULL_MSG(cubic_bezier_easing, vformat("(Invalid easing object type. Expected CubicBezierEasing, got %s.)", easing->get_class()));
 		cubic_bezier_easing->init(args[0], args[1], args[2], args[3]);
 	}
 }
@@ -75,7 +77,7 @@ void CubicBezierEasingData::set_control_points(const Vector4 &p_control_points) 
 		args[i] = String::num_real(control_points.coord[i]);
 	}
 	control_points_text = vformat("%s, %s, %s, %s", args[0], args[1], args[2], args[3]);
-	_update();
+	_update_easing();
 }
 
 Vector4 CubicBezierEasingData::get_control_points() const {
@@ -88,7 +90,7 @@ void CubicBezierEasingData::set_control_points_text(String p_control_points_text
 		Vector<double> args = control_points_text.split_floats(",");
 		if (args.size() > 3) {
 			control_points = Vector4(args[0], args[1], args[2], args[3]);
-			_update();
+			_update_easing();
 		}
 	}
 }

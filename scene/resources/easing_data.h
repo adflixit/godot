@@ -15,8 +15,6 @@ protected:
 public:
 	void set_easing(Ref<Easing> p_easing);
 	Ref<Easing> get_easing() const;
-
-	EasingData() {}
 };
 
 class EquationEasingData : public EasingData {
@@ -25,7 +23,7 @@ class EquationEasingData : public EasingData {
 	EquationEasing::TransitionType transition_type = EquationEasing::TRANS_LINEAR;
 	EquationEasing::EaseType ease_type = EquationEasing::EASE_IN;
 
-	void _update();
+	void _update_easing();
 
 protected:
 	static void _bind_methods();
@@ -36,8 +34,6 @@ public:
 
 	void set_ease_type(EquationEasing::EaseType p_ease);
 	EquationEasing::EaseType get_ease_type() const;
-
-	EquationEasingData() {}
 };
 
 class CubicBezierEasingData : public EasingData {
@@ -46,7 +42,7 @@ class CubicBezierEasingData : public EasingData {
 	Vector4 control_points = Vector4(0.0, 0.0, 1.0, 1.0);
 	String control_points_text = "0.0, 0.0, 1.0, 1.0";
 
-	void _update();
+	void _update_easing();
 
 protected:
 	static void _bind_methods();
@@ -57,6 +53,4 @@ public:
 
 	void set_control_points_text(String p_control_points);
 	String get_control_points_text() const;
-
-	CubicBezierEasingData() {}
 };
