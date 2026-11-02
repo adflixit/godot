@@ -61,27 +61,27 @@ void Tweener::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("finished"));
 }
 
-static Ref<Easing> _variant_to_easing(const Variant &p_variant, const Ref<Easing> &p_fallback) {  
-	switch (p_variant.get_type()) {  
-		case Variant::OBJECT: {  
-			Easing *ptr = Object::cast_to<Easing>(p_variant.get_validated_object());  
-			if (ptr) {  
-				return Ref<Easing>(ptr);  
-			} else {  
-				ERR_FAIL_V_MSG(p_fallback, vformat(R"(Invalid easing object "%s".)", p_variant));  
-			}  
-		} break;  
-		case Variant::INT: {  
-			int value = p_variant;  
-			ERR_FAIL_INDEX_V(value, EquationEasing::EQ_MAX, p_fallback);  
-			return EquationEasing::create(static_cast<EquationEasing::Equation>(value));  
-		} break;  
-		case Variant::CALLABLE: {  
-			return CallableEasing::create(p_variant);  
-		} break;  
-		default: {  
-			ERR_FAIL_V_MSG(p_fallback, vformat(R"(Unsupported easing initializer type "%s".)", Variant::get_type_name(p_variant.get_type())));  
-		} break;  
+static Ref<Easing> _variant_to_easing(const Variant &p_variant, const Ref<Easing> &p_fallback) {
+	switch (p_variant.get_type()) {
+		case Variant::OBJECT: {
+			Easing *ptr = Object::cast_to<Easing>(p_variant.get_validated_object());
+			if (ptr) {
+				return Ref<Easing>(ptr);
+			} else {
+				ERR_FAIL_V_MSG(p_fallback, vformat(R"(Invalid easing object "%s".)", p_variant));
+			}
+		} break;
+		case Variant::INT: {
+			int value = p_variant;
+			ERR_FAIL_INDEX_V(value, EquationEasing::EQ_MAX, p_fallback);
+			return EquationEasing::create(static_cast<EquationEasing::Equation>(value));
+		} break;
+		case Variant::CALLABLE: {
+			return CallableEasing::create(p_variant);
+		} break;
+		default: {
+			ERR_FAIL_V_MSG(p_fallback, vformat(R"(Unsupported easing initializer type "%s".)", Variant::get_type_name(p_variant.get_type())));
+		} break;
 	}
 }
 
