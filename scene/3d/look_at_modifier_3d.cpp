@@ -255,9 +255,13 @@ float LookAtModifier3D::get_duration() const {
 	return duration;
 }
 
-void LookAtModifier3D::set_easing_data(Ref<EasingData> p_easing_data) {
-	easing_data = p_easing_data;
-}
+ void LookAtModifier3D::set_easing_data(Ref<EasingData> p_easing_data) {
+	if (easing_data.is_valid()) {
+		easing = easing_data->get_easing();
+	} else if (easing.is_null()) {
+		easing = EquationEasing::create(EquationEasing::EQ_LINEAR);
+	}
+ }
 
 Ref<EasingData> LookAtModifier3D::get_easing_data() const {
 	return easing_data;
@@ -495,7 +499,7 @@ void LookAtModifier3D::_bind_methods() {
 
 	ADD_GROUP("Time Based Interpolation", "");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "duration", PROPERTY_HINT_RANGE, "0,10,0.001,or_greater,suffix:s"), "set_duration", "get_duration");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "easing_data", PROPERTY_HINT_RESOURCE_TYPE, "EasingData"), "set_easing_data", "get_easing_data");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "easing_data", PROPERTY_HINT_RESOURCE_TYPE, "EquationEasingData,CubicBezierEasingData,EasingData", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT), "set_easing_data", "get_easing_data");
 
 	ADD_GROUP("Angle Limitation", "");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_angle_limitation"), "set_use_angle_limitation", "is_using_angle_limitation");
@@ -618,15 +622,18 @@ void LookAtModifier3D::_process_modification(double p_delta) {
 
 	// Do time-based interpolation.
 	if (remaining > 0) {
+		if (easing.is_null()) {
+			easing = EquationEasing::create(EquationEasing::EQ_LINEAR);
+		}
 		remaining = MAX(0, remaining - time_step * p_delta);
 		Quaternion from = from_q * from_twist.inverse() * current_twist;
 		if (is_flippable) {
 			// Interpolate through the rest same as AnimationTree blending for preventing to penetrate the bone into the body.
 			Quaternion rest = interpolation_rest;
-			float weight = Tween::eval_easing(easing_data->get_easing(), 1 - remaining, 0.0, 1.0, 1.0);
+			float weight = Tween::eval_easing(easing, 1 - remaining, 0.0, 1.0, 1.0);
 			destination = Animation::interpolate_via_rest(Animation::interpolate_via_rest(rest, from, 1 - weight, rest), destination, weight, rest);
 		} else {
-			destination = from_q.slerp(destination, Tween::eval_easing(easing_data->get_easing(), 1 - remaining, 0.0, 1.0, 1.0));
+			destination = from_q.slerp(destination, Tween::eval_easing(easing, 1 - remaining, 0.0, 1.0, 1.0));
 		}
 	}
 

@@ -31,7 +31,6 @@
 #pragma once
 
 #include "scene/3d/skeleton_modifier_3d.h"
-#include "scene/animation/tween.h"
 
 class EasingData;
 
@@ -69,6 +68,7 @@ private:
 
 	float duration = 0;
 	Ref<EasingData> easing_data;
+	Ref<Easing> easing;
 
 	bool use_angle_limitation = false;
 	bool symmetry_limitation = true;
