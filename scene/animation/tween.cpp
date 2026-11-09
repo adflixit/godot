@@ -31,8 +31,7 @@
 #include "tween.h"
 
 #include "scene/main/node.h"
-#include "scene/animation/callable_easing.h"
-#include "scene/animation/equation_easing.h"
+#include "scene/animation/easing.h"
 #include "scene/resources/animation.h"
 
 #define CHECK_VALID() \
@@ -87,19 +86,14 @@ static Ref<Easing> _variant_to_easing(const Variant &p_variant, const Ref<Easing
 
 Ref<Easing> Tween::default_easing;
 
-void Tween::init_static() {
-	default_easing = EquationEasing::create(EquationEasing::EQ_LINEAR);
-}
-
-void Tween::free_static() {
-	default_easing.unref();
-}
-
 void Tween::set_default_easing(const Variant &p_easing) {
 	default_easing = _variant_to_easing(p_easing, default_easing);
 }
 
 Ref<Easing> Tween::get_default_easing() {
+	if (default_easing.is_null()) {
+		default_easing = EquationEasing::create(EquationEasing::EQ_LINEAR);
+	}
 	return default_easing;
 }
 
@@ -317,7 +311,7 @@ Ref<Tween> Tween::set_speed_scale(float p_speed) {
 }
 
 Ref<Tween> Tween::ease(const Variant &p_easing) {
-	easing = _variant_to_easing(p_easing, default_easing);
+	easing = _variant_to_easing(p_easing, get_default_easing());
 	return this;
 }
 
@@ -648,7 +642,7 @@ void PropertyTweener::set_tween(const Ref<Tween> &p_tween) {
 	Tweener::set_tween(p_tween);
 	if (easing.is_null()) {
 		if (p_tween->easing.is_null()) {
-			easing = Tween::default_easing;
+			easing = Tween::get_default_easing();
 		} else {
 			easing = p_tween->easing;
 		}
@@ -815,7 +809,7 @@ void MethodTweener::set_tween(const Ref<Tween> &p_tween) {
 	Tweener::set_tween(p_tween);
 	if (easing.is_null()) {
 		if (p_tween->easing.is_null()) {
-			easing = Tween::default_easing;
+			easing = Tween::get_default_easing();
 		} else {
 			easing = p_tween->easing;
 		}

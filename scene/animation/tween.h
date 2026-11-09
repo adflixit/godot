@@ -30,9 +30,11 @@
 
 #pragma once
 
-#include "scene/animation/easing.h"
+#include "core/object/ref_counted.h"
+#include "core/variant/type_info.h"
 
 class Tween;
+class Easing;
 class Node;
 class SceneTree;
 
@@ -118,9 +120,6 @@ protected:
 	virtual String to_string() override;
 
 public:
-	static void init_static();
-	static void free_static();
-
 	static void set_default_easing(const Variant &p_variant);
 	static Ref<Easing> get_default_easing();
 
