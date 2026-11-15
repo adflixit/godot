@@ -59,7 +59,7 @@ void EquationEasingData::_bind_methods() {
 
 void CubicBezierEasingData::_update_easing() {
 	Ref<Easing> easing = get_easing();
-	real_t *args = control_points.coord;
+	const Vector4 &args = control_points;
 	
 	if (easing.is_null()) {
 		set_easing(CubicBezierEasing::create(args[0], args[1], args[2], args[3]));
@@ -74,7 +74,7 @@ void CubicBezierEasingData::set_control_points(const Vector4 &p_control_points) 
 	control_points = p_control_points;
 	String args[4];
 	for (int i = 0; i < 4; i++) {
-		args[i] = String::num_real(control_points.coord[i]);
+		args[i] = String::num_real(control_points[i]);
 	}
 	control_points_text = vformat("%s, %s, %s, %s", args[0], args[1], args[2], args[3]);
 	_update_easing();
