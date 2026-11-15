@@ -2,7 +2,6 @@
 
 #include "core/io/resource.h"
 #include "scene/animation/easing.h"
-#include "scene/animation/tween.h"
 
 class EasingData : public Resource {
 	GDCLASS(EasingData, Resource);
