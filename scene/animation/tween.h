@@ -117,7 +117,7 @@ private:
 
 protected:
 	static void _bind_methods();
-	virtual String to_string() override;
+	virtual String _to_string() override;
 
 public:
 	static void set_default_easing(const Variant &p_variant);
